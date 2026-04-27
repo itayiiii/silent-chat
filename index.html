@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0e1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <title>שיחה שקטה</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    :root {
+      --bg: #0a0e1a;
+      --bg-elevated: #141a2e;
+      --bg-card: #1c2341;
+      --accent: #f4a261;
+      --accent-dark: #e76f51;
+      --accent-2: #a78bfa;
+      --text: #f1f5f9;
+      --text-dim: #94a3b8;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #eab308;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(ellipse at top, rgba(244, 162, 97, 0.08), transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(167, 139, 250, 0.05), transparent 50%),
+        var(--bg);
+    }
+
+    .screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 24px;
+      overflow-y: auto;
+      animation: fadeIn 0.3s ease;
+    }
+    .screen.hidden { display: none; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .home { justify-content: space-between; }
+    .home-header { padding-top: 40px; text-align: center; }
+    .logo { font-size: 48px; margin-bottom: 16px; }
+    .title { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+    .subtitle { font-size: 16px; color: var(--text-dim); line-height: 1.5; max-width: 320px; margin: 0 auto; }
+    .home-actions { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; }
+
+    .btn {
+      padding: 18px 24px;
+      border-radius: 16px;
+      border: none;
+      font-size: 17px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      color: #fff;
+      box-shadow: 0 10px 30px -10px rgba(244, 162, 97, 0.5);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-purple {
+      background: linear-gradient(135deg, #a78bfa, #7c3aed);
+      color: #fff;
+      box-shadow: 0 10px 30px -10px rgba(167, 139, 250, 0.5);
+    }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .join-screen { justify-content: center; align-items: center; text-align: center; }
+    .code-input {
+      width: 100%;
+      max-width: 320px;
+      padding: 24px;
+      margin: 32px 0;
+      font-size: 32px;
+      font-weight: 700;
+      text-align: center;
+      letter-spacing: 0.3em;
+      border-radius: 16px;
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      outline: none;
+    }
+    .code-input:focus { border-color: var(--accent); }
+    .back-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .room { padding: 14px; gap: 10px; }
+
+    .room-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: var(--bg-card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+    .room-code-label { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+    .room-code { font-size: 20px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); }
+    .room-status {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 20px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .filter-section {
+      background: var(--bg-card);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+    .filter-title {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .info-icon {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      cursor: pointer;
+      color: var(--text);
+    }
+    .filter-modes {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 6px;
+    }
+    .filter-mode {
+      padding: 10px 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      transition: all 0.2s;
+      position: relative;
+    }
+    .filter-mode.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    .filter-mode.voice-mode.active {
+      background: var(--accent-2);
+      border-color: var(--accent-2);
+      color: #fff;
+    }
+    .filter-mode.disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .filter-mode .icon { font-size: 16px; }
+    .filter-mode .hint { font-size: 9px; opacity: 0.8; font-weight: 400; }
+    .filter-mode .badge {
+      position: absolute;
+      top: -5px;
+      left: -5px;
+      width: 16px; height: 16px;
+      background: var(--success);
+      border-radius: 50%;
+      font-size: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+    }
+
+    .voice-enrollment-section {
+      background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(124, 58, 237, 0.05));
+      border: 1px solid rgba(167, 139, 250, 0.3);
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 10px;
+      display: none;
+    }
+    .voice-enrollment-section.visible { display: block; }
+    .enroll-title {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--accent-2);
+    }
+    .enroll-desc {
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 10px;
+    }
+    .enroll-status {
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.3);
+      margin-bottom: 10px;
+      font-family: monospace;
+    }
+
+    .enroll-progress {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+      margin-bottom: 10px;
+      display: none;
+    }
+    .enroll-progress.visible { display: block; }
+    .enroll-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent-2), #7c3aed);
+      width: 0%;
+      transition: width 0.1s;
+    }
+
+    .ptt-button {
+      display: none;
+      width: 100%;
+      padding: 20px;
+      border-radius: 14px;
+      border: 2px solid var(--accent);
+      background: var(--bg-card);
+      color: var(--text);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+      text-align: center;
+      transition: all 0.1s;
+      margin-top: 10px;
+    }
+    .ptt-button.visible { display: block; }
+    .ptt-button.pressed {
+      background: var(--accent);
+      color: #000;
+      transform: scale(0.98);
+      box-shadow: 0 0 30px rgba(244, 162, 97, 0.4);
+    }
+
+    .participants {
+      flex: 1;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .participant {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px;
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    .participant.speaking {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.2);
+    }
+
+    .avatar {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .participant-info { flex: 1; min-width: 0; }
+    .participant-name { font-weight: 600; margin-bottom: 2px; font-size: 13px; }
+    .participant-status { font-size: 10px; color: var(--text-dim); }
+
+    .volume-meter {
+      width: 40px; height: 5px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .volume-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), var(--accent));
+      width: 0%;
+      transition: width 0.1s;
+    }
+
+    .controls {
+      display: flex;
+      gap: 8px;
+    }
+    .control-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text);
+      font-weight: 600;
+      font-family: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+    }
+    .control-btn.active { background: var(--accent); color: #000; }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    .modal-backdrop.visible { display: flex; }
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      max-width: 400px;
+      width: 100%;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    .modal h3 {
+      font-size: 18px;
+      margin-bottom: 14px;
+      color: var(--accent);
+    }
+    .mode-desc {
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .mode-desc:last-child { border-bottom: none; }
+    .mode-desc strong { display: block; margin-bottom: 4px; }
+    .mode-desc p { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+
+    .enroll-modal {
+      text-align: center;
+    }
+    .enroll-visualizer {
+      width: 100%;
+      height: 80px;
+      background: var(--bg);
+      border-radius: 12px;
+      margin: 16px 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .enroll-visualizer canvas {
+      width: 100%;
+      height: 100%;
+    }
+    .enroll-timer {
+      font-size: 48px;
+      font-weight: 700;
+      font-family: monospace;
+      color: var(--accent-2);
+      margin: 20px 0;
+    }
+    .enroll-instruction {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; }
+    .toast.error { border-color: var(--danger); }
+    .toast.success { border-color: var(--success); }
+
+    audio { display: none; }
+
+    .info-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="screen-home" class="screen home">
+    <div class="home-header">
+      <div class="logo">🎧</div>
+      <h1 class="title">שיחה שקטה</h1>
+      <p class="subtitle">דברו בבירור באוזניות גם בסביבה רועשת - כמו במסעדה</p>
+    </div>
+    <div class="home-actions">
+      <div class="info-box">
+        💡 העדיפו אוזניות חוטיות. כולם צריכים להיות באותה רשת Wi-Fi או Hotspot.
+      </div>
+      <button class="btn btn-primary" onclick="showCreate()">צור חדר חדש</button>
+      <button class="btn btn-secondary" onclick="showJoin()">הצטרף לחדר</button>
+    </div>
+  </div>
+
+  <div id="screen-join" class="screen join-screen hidden">
+    <button class="back-btn" onclick="showHome()">×</button>
+    <div class="logo">🔗</div>
+    <h2 class="title" style="font-size: 24px;">הזן קוד חדר</h2>
+    <p class="subtitle">קבלת הקוד ממי שיצר את החדר</p>
+    <input type="text" id="room-code-input" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
+    <button class="btn btn-primary" style="width: 100%; max-width: 320px;" onclick="joinRoom()">הצטרף</button>
+  </div>
+
+  <div id="screen-room" class="screen room hidden">
+    <div class="room-header">
+      <div>
+        <div class="room-code-label">קוד החדר</div>
+        <div class="room-code" id="current-room-code">------</div>
+      </div>
+      <div class="room-status">
+        <span class="status-dot"></span>
+        <span id="connection-status">מתחבר...</span>
+      </div>
+    </div>
+
+    <div class="filter-section">
+      <div class="filter-title">
+        <span>מצב סינון 🎚️</span>
+        <span class="info-icon" onclick="showFilterInfo()">?</span>
+      </div>
+      <div class="filter-modes">
+        <button class="filter-mode" data-mode="off" onclick="setFilterMode('off')">
+          <span class="icon">🔊</span>
+          <span>כבוי</span>
+          <span class="hint">ללא</span>
+        </button>
+        <button class="filter-mode active" data-mode="basic" onclick="setFilterMode('basic')">
+          <span class="icon">🎵</span>
+          <span>בסיסי</span>
+          <span class="hint">רעש</span>
+        </button>
+        <button class="filter-mode" data-mode="smart" onclick="setFilterMode('smart')">
+          <span class="icon">🎯</span>
+          <span>חכם</span>
+          <span class="hint">עצמה</span>
+        </button>
+        <button class="filter-mode voice-mode" data-mode="voice" onclick="setFilterMode('voice')">
+          <span class="icon">🧬</span>
+          <span>זיהוי</span>
+          <span class="hint">קולי</span>
+          <span id="voice-enrolled-badge" class="badge" style="display:none;">✓</span>
+        </button>
+        <button class="filter-mode" data-mode="ptt" onclick="setFilterMode('ptt')">
+          <span class="icon">🎙️</span>
+          <span>PTT</span>
+          <span class="hint">ידני</span>
+        </button>
+      </div>
+
+      <div id="voice-enrollment" class="voice-enrollment-section">
+        <div class="enroll-title">🧬 זיהוי קול - רישום</div>
+        <div class="enroll-desc">
+          לפני שימוש, צריך לרשום את הקול שלך (5 שניות). המערכת תעביר לאחרים רק את הקול שלך.
+        </div>
+        <div class="enroll-status" id="enroll-status">לא נרשם עדיין</div>
+        <button class="btn btn-purple" style="width:100%;" onclick="startEnrollment()">
+          🎤 רשם את הקול שלי
+        </button>
+      </div>
+
+      <div id="ptt-button" class="ptt-button">
+        🎙️ לחץ והחזק כדי לדבר
+      </div>
+    </div>
+
+    <div class="participants" id="participants-list"></div>
+
+    <div class="controls">
+      <button class="control-btn" id="mute-btn" onclick="toggleMute()">
+        <span id="mute-icon">🎤</span>
+        <span id="mute-text">השתק</span>
+      </button>
+      <button class="control-btn btn-danger" onclick="leaveRoom()" style="color: #fff;">
+        <span>❌</span>
+        <span>עזוב</span>
+      </button>
+    </div>
+
+    <div id="audio-elements"></div>
+  </div>
+
+  <!-- מודאל הסבר על מצבי סינון -->
+  <div id="filter-info-modal" class="modal-backdrop" onclick="hideFilterInfo(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>🎚️ מצבי סינון אודיו</h3>
+      <div class="mode-desc">
+        <strong>🔊 כבוי</strong>
+        <p>ללא סינון - נקודת ייחוס להשוואה.</p>
+      </div>
+      <div class="mode-desc">
+        <strong>🎵 בסיסי</strong>
+        <p>סינון רעש של הדפדפן. מסיר רעש רקע אחיד. לא מבדיל בין קולות.</p>
+      </div>
+      <div class="mode-desc">
+        <strong>🎯 חכם</strong>
+        <p>Volume Gate + סינון בסיסי. עובר רק קול חזק מספיק. מסנן שקט, לא קולות אחרים.</p>
+      </div>
+      <div class="mode-desc">
+        <strong>🧬 זיהוי קול</strong>
+        <p><strong>ניסיוני!</strong> דורש רישום של 5 שניות. המערכת תנסה להעביר רק את הקול שלך. משתמש ב"טביעת אצבע אקוסטית" פשוטה (pitch, formants). לא מושלם - יכול להיכשל אם אתה לוחש, מצונן, או אם חבר שלך עם קול דומה מדבר. יותר אגרסיבי בסינון מהמצבים האחרים.</p>
+      </div>
+      <div class="mode-desc">
+        <strong>🎙️ לחץ ודבר</strong>
+        <p>ידני מלא - הכי אמין.</p>
+      </div>
+      <button class="btn btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideFilterInfo()">סגור</button>
+    </div>
+  </div>
+
+  <!-- מודאל רישום קול -->
+  <div id="enrollment-modal" class="modal-backdrop">
+    <div class="modal enroll-modal">
+      <h3 style="color: var(--accent-2);">🧬 רישום קול</h3>
+      <div class="enroll-instruction" id="enroll-instruction">
+        לחץ "התחל" ודבר למשך 5 שניות.<br/>
+        <strong>דוגמה:</strong> "אחד שתיים שלוש ארבע חמש, שש שבע שמונה תשע עשר, אני רוצה לבדוק את הקול שלי"
+      </div>
+      <div class="enroll-timer" id="enroll-timer">5</div>
+      <div class="enroll-visualizer">
+        <canvas id="enroll-canvas" width="300" height="80"></canvas>
+      </div>
+      <div class="enroll-progress visible">
+        <div class="enroll-progress-fill" id="enroll-progress-fill"></div>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-purple" style="flex:1;" id="enroll-start-btn" onclick="beginEnrollmentRecording()">התחל</button>
+        <button class="btn btn-secondary" style="flex:1;" onclick="cancelEnrollment()">ביטול</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================================================================
+    // הגדרות בסיסיות
+    // =========================================================================
+    const SIGNALING_SERVER = 'wss://your-server.onrender.com';
+    const ICE_SERVERS = [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' }
+    ];
+
+    // =========================================================================
+    // משתנים גלובליים
+    // =========================================================================
+    let ws = null;
+    let rawStream = null;
+    let outputStream = null;
+    let audioContext = null;
+    let roomCode = null;
+    let myId = null;
+    let isMuted = false;
+    let filterMode = 'basic'; // off | basic | smart | voice | ptt
+    let pttActive = false;
+
+    // Web Audio nodes
+    let sourceNode = null;
+    let destinationNode = null;
+    let gainNode = null;
+    let analyzerNode = null;
+
+    const peers = {};
+    const audioAnalyzers = {};
+
+    // =========================================================================
+    // Voice Fingerprinting - הטביעה האקוסטית של המשתמש
+    // =========================================================================
+    // טביעת אצבע קולית מכילה מספר פרמטרים שמתארים את הקול של המשתמש.
+    // זה לא AI אמיתי - זה heuristics מבוססי DSP שעובדים טוב יחסית.
+
+    let voiceFingerprint = null;  // null = לא נרשם עדיין
+    // מבנה: { pitchMean, pitchStd, formant1, formant2, spectralCentroid, mfccProfile }
+
+    let isEnrolling = false;
+    let enrollmentSamples = [];
+    let enrollmentAnalyzer = null;
+    let enrollmentStream = null;
+    let enrollmentCtx = null;
+
+    // =========================================================================
+    // ניהול מסכים
+    // =========================================================================
+    function showHome() {
+      document.getElementById('screen-home').classList.remove('hidden');
+      document.getElementById('screen-join').classList.add('hidden');
+      document.getElementById('screen-room').classList.add('hidden');
+    }
+    function showJoin() {
+      document.getElementById('screen-home').classList.add('hidden');
+      document.getElementById('screen-join').classList.remove('hidden');
+      document.getElementById('room-code-input').focus();
+    }
+    function showCreate() {
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      startRoom(code, true);
+    }
+    function showRoom() {
+      document.getElementById('screen-home').classList.add('hidden');
+      document.getElementById('screen-join').classList.add('hidden');
+      document.getElementById('screen-room').classList.remove('hidden');
+      document.getElementById('current-room-code').textContent = roomCode;
+    }
+
+    function showToast(message, type = 'info') {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.className = 'toast show' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    function setStatus(text) {
+      document.getElementById('connection-status').textContent = text;
+    }
+
+    // =========================================================================
+    // קבלת מיקרופון ובניית pipeline
+    // =========================================================================
+    async function getLocalStream(enableBrowserFilters) {
+      try {
+        return await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: enableBrowserFilters,
+            autoGainControl: enableBrowserFilters,
+            sampleRate: 48000,
+            channelCount: 1
+          },
+          video: false
+        });
+      } catch (err) {
+        showToast('לא הצלחתי לגשת למיקרופון: ' + err.message, 'error');
+        throw err;
+      }
+    }
+
+    async function setupAudioPipeline() {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      sourceNode = audioContext.createMediaStreamSource(rawStream);
+
+      gainNode = audioContext.createGain();
+      gainNode.gain.value = 1;
+
+      analyzerNode = audioContext.createAnalyser();
+      analyzerNode.fftSize = 2048; // FFT גדול יותר = דיוק טוב יותר בזיהוי קול
+      analyzerNode.smoothingTimeConstant = 0.3;
+
+      destinationNode = audioContext.createMediaStreamDestination();
+
+      sourceNode.connect(gainNode);
+      gainNode.connect(destinationNode);
+      sourceNode.connect(analyzerNode);
+
+      outputStream = destinationNode.stream;
+      startAudioLoop();
+    }
+
+    // =========================================================================
+    // לולאת עיבוד אודיו ראשית - רצה 60 פעמים בשנייה
+    // מבצעת: מדידת ווליום, VAD, זיהוי קול, שליטה ב-GainNode
+    // =========================================================================
+    const VAD_THRESHOLD = 25;
+    const VAD_RELEASE_MS = 300;
+    const VOICE_MATCH_THRESHOLD = 0.65; // כמה דומה הפריים הנוכחי לטביעה - 0 עד 1
+    const VOICE_RELEASE_MS = 200;
+    let vadLastActiveTime = 0;
+    let voiceLastMatchTime = 0;
+
+    function startAudioLoop() {
+      const freqData = new Uint8Array(analyzerNode.frequencyBinCount);
+      const timeData = new Float32Array(analyzerNode.fftSize);
+
+      function loop() {
+        if (!analyzerNode) return;
+
+        analyzerNode.getByteFrequencyData(freqData);
+        analyzerNode.getFloatTimeDomainData(timeData);
+
+        // חישוב ווליום כללי
+        const avg = freqData.reduce((a, b) => a + b, 0) / freqData.length;
+        const percent = Math.min(100, avg * 2);
+
+        // עדכון מד ווליום של המשתמש עצמו
+        const myFill = document.getElementById('my-volume');
+        if (myFill) myFill.style.width = percent + '%';
+
+        const now = Date.now();
+        let shouldBeOpen = true;
+        let extraStatus = '';
+
+        if (isMuted) {
+          shouldBeOpen = false;
+        } else if (filterMode === 'ptt') {
+          shouldBeOpen = pttActive;
+        } else if (filterMode === 'smart') {
+          if (avg > VAD_THRESHOLD) vadLastActiveTime = now;
+          shouldBeOpen = (now - vadLastActiveTime) < VAD_RELEASE_MS;
+        } else if (filterMode === 'voice') {
+          // מצב זיהוי קול - הכי מתוחכם
+          if (!voiceFingerprint) {
+            shouldBeOpen = false;
+            extraStatus = 'צריך רישום';
+          } else if (avg < VAD_THRESHOLD) {
+            // שקט - גם ככה לא צריך לחשב
+            shouldBeOpen = (now - voiceLastMatchTime) < VOICE_RELEASE_MS;
+          } else {
+            // יש קול - בוא נבדוק אם הוא שלי
+            const currentFeatures = extractVoiceFeatures(freqData, timeData);
+            const similarity = compareFingerprints(voiceFingerprint, currentFeatures);
+
+            if (similarity > VOICE_MATCH_THRESHOLD) {
+              voiceLastMatchTime = now;
+              shouldBeOpen = true;
+              extraStatus = `✓ זיהוי: ${(similarity * 100).toFixed(0)}%`;
+            } else {
+              shouldBeOpen = (now - voiceLastMatchTime) < VOICE_RELEASE_MS;
+              extraStatus = `✗ לא מזוהה: ${(similarity * 100).toFixed(0)}%`;
+            }
+          }
+        }
+
+        // החל על GainNode
+        if (gainNode) {
+          const target = shouldBeOpen ? 1 : 0;
+          gainNode.gain.setTargetAtTime(target, audioContext.currentTime, 0.01);
+        }
+
+        updateMyStatusUI(shouldBeOpen, percent, extraStatus);
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+
+    // =========================================================================
+    // חילוץ תכונות קוליות מפריים אודיו
+    // =========================================================================
+    // התכונות שאנחנו מחלצים:
+    // 1. Pitch (F0) - תדירות יסוד, גובה הקול
+    // 2. Spectral Centroid - "מרכז הכובד" של התדרים, מרגיש כמו "בהירות" של הקול
+    // 3. Spectral Rolloff - עד איזה תדר רוב האנרגיה
+    // 4. Low-Mid-High energy distribution - פרופיל אנרגיה
+    // 5. Spectral Flux - שינוי ספקטרלי לאורך זמן
+    // =========================================================================
+
+    function extractVoiceFeatures(freqData, timeData) {
+      const sampleRate = audioContext.sampleRate;
+      const binSize = sampleRate / (2 * freqData.length);
+
+      // 1. חישוב pitch בסיסי - autocorrelation
+      const pitch = estimatePitch(timeData, sampleRate);
+
+      // 2. Spectral Centroid
+      let numerator = 0, denominator = 0;
+      for (let i = 0; i < freqData.length; i++) {
+        numerator += i * freqData[i];
+        denominator += freqData[i];
+      }
+      const centroid = denominator > 0 ? (numerator / denominator) * binSize : 0;
+
+      // 3. Spectral Rolloff (95%)
+      const totalEnergy = denominator;
+      let rolloff = 0;
+      let cumEnergy = 0;
+      for (let i = 0; i < freqData.length; i++) {
+        cumEnergy += freqData[i];
+        if (cumEnergy >= totalEnergy * 0.95) {
+          rolloff = i * binSize;
+          break;
+        }
+      }
+
+      // 4. Energy distribution (low 0-500Hz, mid 500-2000Hz, high 2000-4000Hz)
+      const lowBin = Math.floor(500 / binSize);
+      const midBin = Math.floor(2000 / binSize);
+      const highBin = Math.floor(4000 / binSize);
+      let low = 0, mid = 0, high = 0;
+      for (let i = 0; i < lowBin; i++) low += freqData[i];
+      for (let i = lowBin; i < midBin; i++) mid += freqData[i];
+      for (let i = midBin; i < highBin; i++) high += freqData[i];
+      const sum = low + mid + high || 1;
+
+      return {
+        pitch: pitch,
+        centroid: centroid,
+        rolloff: rolloff,
+        lowRatio: low / sum,
+        midRatio: mid / sum,
+        highRatio: high / sum
+      };
+    }
+
+    // הערכת pitch באמצעות autocorrelation - גובה הקול הבסיסי
+    function estimatePitch(timeData, sampleRate) {
+      const minPeriod = Math.floor(sampleRate / 500); // max 500Hz
+      const maxPeriod = Math.floor(sampleRate / 60);  // min 60Hz
+
+      let bestCorr = 0;
+      let bestPeriod = 0;
+
+      for (let period = minPeriod; period < maxPeriod; period++) {
+        let correlation = 0;
+        for (let i = 0; i < timeData.length - period; i++) {
+          correlation += timeData[i] * timeData[i + period];
+        }
+        if (correlation > bestCorr) {
+          bestCorr = correlation;
+          bestPeriod = period;
+        }
+      }
+
+      return bestPeriod > 0 ? sampleRate / bestPeriod : 0;
+    }
+
+    // השוואת שתי טביעות אצבע - מחזיר ציון דמיון 0-1
+    function compareFingerprints(fp1, fp2) {
+      // נרמול של כל תכונה ושקלול
+      const pitchDiff = Math.abs(fp1.pitch - fp2.pitch) / Math.max(fp1.pitch, 1);
+      const centroidDiff = Math.abs(fp1.centroid - fp2.centroid) / Math.max(fp1.centroid, 1);
+      const rolloffDiff = Math.abs(fp1.rolloff - fp2.rolloff) / Math.max(fp1.rolloff, 1);
+      const lowDiff = Math.abs(fp1.lowRatio - fp2.lowRatio);
+      const midDiff = Math.abs(fp1.midRatio - fp2.midRatio);
+      const highDiff = Math.abs(fp1.highRatio - fp2.highRatio);
+
+      // משקלים - pitch הכי חשוב כי הוא ייחודי לאדם
+      const weights = { pitch: 0.35, centroid: 0.15, rolloff: 0.10, low: 0.15, mid: 0.15, high: 0.10 };
+
+      const score = 1 - (
+        weights.pitch * Math.min(pitchDiff, 1) +
+        weights.centroid * Math.min(centroidDiff, 1) +
+        weights.rolloff * Math.min(rolloffDiff, 1) +
+        weights.low * Math.min(lowDiff * 3, 1) +
+        weights.mid * Math.min(midDiff * 3, 1) +
+        weights.high * Math.min(highDiff * 3, 1)
+      );
+
+      return Math.max(0, Math.min(1, score));
+    }
+
+    // =========================================================================
+    // Enrollment - רישום הקול
+    // =========================================================================
+    function startEnrollment() {
+      document.getElementById('enrollment-modal').classList.add('visible');
+      document.getElementById('enroll-timer').textContent = '5';
+      document.getElementById('enroll-start-btn').disabled = false;
+      document.getElementById('enroll-start-btn').textContent = 'התחל';
+      document.getElementById('enroll-progress-fill').style.width = '0%';
+    }
+
+    async function beginEnrollmentRecording() {
+      if (isEnrolling) return;
+      isEnrolling = true;
+      enrollmentSamples = [];
+
+      const btn = document.getElementById('enroll-start-btn');
+      btn.disabled = true;
+      btn.textContent = '🎤 מקליט...';
+
+      try {
+        // שימוש באותו stream של המיקרופון (לא לבקש הרשאה חדשה)
+        if (!rawStream) {
+          throw new Error('אין stream פעיל');
+        }
+
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const source = ctx.createMediaStreamSource(rawStream);
+        const analyzer = ctx.createAnalyser();
+        analyzer.fftSize = 2048;
+        analyzer.smoothingTimeConstant = 0.3;
+        source.connect(analyzer);
+
+        enrollmentCtx = ctx;
+        enrollmentAnalyzer = analyzer;
+
+        const duration = 5000; // 5 שניות
+        const startTime = Date.now();
+        const freqData = new Uint8Array(analyzer.frequencyBinCount);
+        const timeData = new Float32Array(analyzer.fftSize);
+
+        // visualization canvas
+        const canvas = document.getElementById('enroll-canvas');
+        const cctx = canvas.getContext('2d');
+
+        function enrollLoop() {
+          const elapsed = Date.now() - startTime;
+          if (elapsed >= duration) {
+            finalizeEnrollment();
+            return;
+          }
+
+          analyzer.getByteFrequencyData(freqData);
+          analyzer.getFloatTimeDomainData(timeData);
+
+          // חלץ features רק אם יש קול משמעותי (אחרת שקט יקלקל את הטביעה)
+          const avg = freqData.reduce((a, b) => a + b, 0) / freqData.length;
+          if (avg > 20) {
+            const features = extractVoiceFeatures(freqData, timeData);
+            if (features.pitch > 0) {
+              enrollmentSamples.push(features);
+            }
+          }
+
+          // UI - שעון ספירה לאחור
+          const remaining = Math.ceil((duration - elapsed) / 1000);
+          document.getElementById('enroll-timer').textContent = remaining;
+          document.getElementById('enroll-progress-fill').style.width = (elapsed / duration * 100) + '%';
+
+          // ציור ויזואליזר
+          cctx.fillStyle = '#0a0e1a';
+          cctx.fillRect(0, 0, canvas.width, canvas.height);
+          cctx.fillStyle = '#a78bfa';
+          const barWidth = canvas.width / 64;
+          for (let i = 0; i < 64; i++) {
+            const barHeight = (freqData[i] / 255) * canvas.height;
+            cctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth - 1, barHeight);
+          }
+
+          requestAnimationFrame(enrollLoop);
+        }
+        enrollLoop();
+
+      } catch (err) {
+        console.error(err);
+        showToast('שגיאה ברישום: ' + err.message, 'error');
+        cancelEnrollment();
+      }
+    }
+
+    function finalizeEnrollment() {
+      isEnrolling = false;
+
+      if (enrollmentCtx) {
+        enrollmentCtx.close();
+        enrollmentCtx = null;
+        enrollmentAnalyzer = null;
+      }
+
+      if (enrollmentSamples.length < 20) {
+        showToast('לא נקלט מספיק קול. נסה שוב ודבר חזק יותר', 'error');
+        document.getElementById('enroll-start-btn').disabled = false;
+        document.getElementById('enroll-start-btn').textContent = 'נסה שוב';
+        return;
+      }
+
+      // חשב ממוצע של כל הסמפלים כדי ליצור טביעה יציבה
+      const avg = {
+        pitch: 0, centroid: 0, rolloff: 0,
+        lowRatio: 0, midRatio: 0, highRatio: 0
+      };
+
+      for (const s of enrollmentSamples) {
+        avg.pitch += s.pitch;
+        avg.centroid += s.centroid;
+        avg.rolloff += s.rolloff;
+        avg.lowRatio += s.lowRatio;
+        avg.midRatio += s.midRatio;
+        avg.highRatio += s.highRatio;
+      }
+
+      const n = enrollmentSamples.length;
+      voiceFingerprint = {
+        pitch: avg.pitch / n,
+        centroid: avg.centroid / n,
+        rolloff: avg.rolloff / n,
+        lowRatio: avg.lowRatio / n,
+        midRatio: avg.midRatio / n,
+        highRatio: avg.highRatio / n,
+        sampleCount: n
+      };
+
+      // שמירה ב-localStorage לשימוש חוזר
+      try {
+        localStorage.setItem('voice_fingerprint', JSON.stringify(voiceFingerprint));
+      } catch (e) {}
+
+      // עדכון UI
+      document.getElementById('enroll-status').textContent =
+        `✓ נרשם בהצלחה! Pitch: ${voiceFingerprint.pitch.toFixed(1)}Hz, ${n} סמפלים`;
+      document.getElementById('voice-enrolled-badge').style.display = 'flex';
+
+      showToast('הקול שלך נרשם!', 'success');
+
+      setTimeout(() => {
+        document.getElementById('enrollment-modal').classList.remove('visible');
+      }, 1500);
+    }
+
+    function cancelEnrollment() {
+      isEnrolling = false;
+      if (enrollmentCtx) {
+        enrollmentCtx.close();
+        enrollmentCtx = null;
+        enrollmentAnalyzer = null;
+      }
+      document.getElementById('enrollment-modal').classList.remove('visible');
+    }
+
+    // =========================================================================
+    // עדכון UI של המשתתף הנוכחי
+    // =========================================================================
+    function updateMyStatusUI(gateOpen, percent, extra = '') {
+      const card = document.getElementById('participant-me');
+      if (!card) return;
+      const statusEl = card.querySelector('.participant-status');
+      if (!statusEl) return;
+
+      let text = '', color = '';
+      if (isMuted) {
+        text = '🔇 מושתק'; color = 'var(--danger)';
+      } else if (filterMode === 'ptt') {
+        text = pttActive ? '🎙️ מדבר (PTT)' : '⏸️ PTT - לחץ לדבר';
+        color = pttActive ? 'var(--success)' : 'var(--text-dim)';
+      } else if (filterMode === 'voice') {
+        if (!voiceFingerprint) {
+          text = '⚠️ דורש רישום';
+          color = 'var(--warning)';
+        } else if (gateOpen) {
+          text = '🧬 ' + (extra || 'קול מזוהה');
+          color = 'var(--accent-2)';
+        } else {
+          text = '🧬 ' + (extra || 'ממתין לקול שלך');
+          color = 'var(--text-dim)';
+        }
+      } else if (filterMode === 'smart') {
+        text = gateOpen ? '✓ מעביר קול' : '🔕 ממתין';
+        color = gateOpen ? 'var(--success)' : 'var(--text-dim)';
+      } else if (filterMode === 'basic') {
+        text = '🎵 סינון רעש'; color = 'var(--text-dim)';
+      } else {
+        text = '🔊 ללא סינון'; color = 'var(--warning)';
+      }
+
+      statusEl.textContent = text;
+      statusEl.style.color = color;
+
+      if (gateOpen && percent > 10) card.classList.add('speaking');
+      else card.classList.remove('speaking');
+    }
+
+    // =========================================================================
+    // ניהול מצבי סינון
+    // =========================================================================
+    async function setFilterMode(mode) {
+      if (mode === filterMode) return;
+
+      // אם עוברים למצב voice בלי טביעה - פותחים את מסך הרישום
+      if (mode === 'voice' && !voiceFingerprint) {
+        document.getElementById('voice-enrollment').classList.add('visible');
+        filterMode = mode;
+        document.querySelectorAll('.filter-mode').forEach(btn => {
+          btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+        showToast('לחץ "רשם את הקול שלי" כדי להפעיל', 'info');
+        return;
+      }
+
+      const oldMode = filterMode;
+      filterMode = mode;
+
+      document.querySelectorAll('.filter-mode').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === mode);
+      });
+
+      // הצג/הסתר voice enrollment section
+      document.getElementById('voice-enrollment').classList.toggle('visible', mode === 'voice');
+
+      const pttBtn = document.getElementById('ptt-button');
+      pttBtn.classList.toggle('visible', mode === 'ptt');
+      if (mode !== 'ptt') pttActive = false;
+
+      // טעינה מחדש של המיקרופון רק אם הסינון של הדפדפן משתנה
+      const needsBrowserFilter = (mode === 'basic' || mode === 'smart');
+      const hadBrowserFilter = (oldMode === 'basic' || oldMode === 'smart');
+
+      if (needsBrowserFilter !== hadBrowserFilter) {
+        await reloadMicrophone(needsBrowserFilter);
+      }
+
+      showToast('מצב: ' + getModeName(mode));
+    }
+
+    function getModeName(mode) {
+      return { 'off': 'כבוי', 'basic': 'בסיסי', 'smart': 'חכם', 'voice': 'זיהוי קול', 'ptt': 'לחץ ודבר' }[mode];
+    }
+
+    async function reloadMicrophone(enableBrowserFilters) {
+      try {
+        if (rawStream) rawStream.getTracks().forEach(t => t.stop());
+        rawStream = await getLocalStream(enableBrowserFilters);
+        if (audioContext) await audioContext.close();
+        await setupAudioPipeline();
+
+        const newTrack = outputStream.getAudioTracks()[0];
+        for (const peerId in peers) {
+          const pc = peers[peerId];
+          const sender = pc.getSenders().find(s => s.track && s.track.kind === 'audio');
+          if (sender) await sender.replaceTrack(newTrack);
+        }
+      } catch (err) {
+        console.error('שגיאה בטעינה מחדש:', err);
+        showToast('שגיאה בשינוי מצב', 'error');
+      }
+    }
+
+    // =========================================================================
+    // Push To Talk
+    // =========================================================================
+    function setupPTT() {
+      const btn = document.getElementById('ptt-button');
+      const start = (e) => {
+        if (filterMode !== 'ptt') return;
+        e.preventDefault();
+        pttActive = true;
+        btn.classList.add('pressed');
+        btn.textContent = '🎙️ מדבר...';
+      };
+      const end = (e) => {
+        if (filterMode !== 'ptt') return;
+        e.preventDefault();
+        pttActive = false;
+        btn.classList.remove('pressed');
+        btn.textContent = '🎙️ לחץ והחזק כדי לדבר';
+      };
+      btn.addEventListener('touchstart', start, { passive: false });
+      btn.addEventListener('touchend', end);
+      btn.addEventListener('touchcancel', end);
+      btn.addEventListener('mousedown', start);
+      btn.addEventListener('mouseup', end);
+      btn.addEventListener('mouseleave', end);
+    }
+
+    function showFilterInfo() {
+      document.getElementById('filter-info-modal').classList.add('visible');
+    }
+    function hideFilterInfo(event) {
+      document.getElementById('filter-info-modal').classList.remove('visible');
+    }
+
+    // =========================================================================
+    // הצטרפות / יצירת חדר
+    // =========================================================================
+    async function joinRoom() {
+      const code = document.getElementById('room-code-input').value.trim();
+      if (!/^\d{6}$/.test(code)) {
+        showToast('הקוד חייב להיות 6 ספרות', 'error');
+        return;
+      }
+      await startRoom(code, false);
+    }
+
+    async function startRoom(code, isCreator) {
+      try {
+        setStatus('מבקש גישה למיקרופון...');
+        rawStream = await getLocalStream(true);
+        await setupAudioPipeline();
+        setupPTT();
+
+        // טעינת fingerprint שמור
+        try {
+          const saved = localStorage.getItem('voice_fingerprint');
+          if (saved) {
+            voiceFingerprint = JSON.parse(saved);
+            document.getElementById('enroll-status').textContent =
+              `✓ טביעת קול שמורה - Pitch: ${voiceFingerprint.pitch.toFixed(1)}Hz`;
+            document.getElementById('voice-enrolled-badge').style.display = 'flex';
+          }
+        } catch (e) {}
+
+        roomCode = code;
+        showRoom();
+        setStatus('מתחבר לשרת...');
+        connectSignaling(isCreator);
+      } catch (err) {
+        console.error(err);
+        showHome();
+      }
+    }
+
+    // =========================================================================
+    // WebRTC + Signaling
+    // =========================================================================
+    function connectSignaling(isCreator) {
+      ws = new WebSocket(SIGNALING_SERVER);
+      ws.onopen = () => {
+        setStatus('מחובר');
+        ws.send(JSON.stringify({ type: isCreator ? 'create' : 'join', room: roomCode }));
+      };
+      ws.onmessage = async (event) => {
+        const msg = JSON.parse(event.data);
+        await handleSignalingMessage(msg);
+      };
+      ws.onerror = () => { showToast('שגיאת חיבור לשרת', 'error'); setStatus('שגיאה'); };
+      ws.onclose = () => setStatus('התנתקתי');
+    }
+
+    async function handleSignalingMessage(msg) {
+      switch (msg.type) {
+        case 'joined':
+          myId = msg.yourId;
+          updateMyParticipant();
+          for (const peerId of msg.peers) {
+            await createPeerConnection(peerId, true);
+          }
+          break;
+        case 'peer-joined': addParticipantUI(msg.peerId); break;
+        case 'offer': await handleOffer(msg.from, msg.offer); break;
+        case 'answer': await handleAnswer(msg.from, msg.answer); break;
+        case 'ice-candidate': await handleIceCandidate(msg.from, msg.candidate); break;
+        case 'peer-left': removePeer(msg.peerId); break;
+        case 'error': showToast(msg.message, 'error'); break;
+      }
+    }
+
+    async function createPeerConnection(peerId, createOffer) {
+      const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+      peers[peerId] = pc;
+
+      outputStream.getTracks().forEach(track => {
+        pc.addTrack(track, outputStream);
+      });
+
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          ws.send(JSON.stringify({ type: 'ice-candidate', to: peerId, candidate: event.candidate }));
+        }
+      };
+      pc.ontrack = (event) => playRemoteAudio(peerId, event.streams[0]);
+      pc.onconnectionstatechange = () => updatePeerStatus(peerId, pc.connectionState);
+
+      addParticipantUI(peerId);
+
+      if (createOffer) {
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        ws.send(JSON.stringify({ type: 'offer', to: peerId, offer }));
+      }
+      return pc;
+    }
+
+    async function handleOffer(from, offer) {
+      const pc = await createPeerConnection(from, false);
+      await pc.setRemoteDescription(new RTCSessionDescription(offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
+      ws.send(JSON.stringify({ type: 'answer', to: from, answer }));
+    }
+    async function handleAnswer(from, answer) {
+      const pc = peers[from];
+      if (pc) await pc.setRemoteDescription(new RTCSessionDescription(answer));
+    }
+    async function handleIceCandidate(from, candidate) {
+      const pc = peers[from];
+      if (pc) await pc.addIceCandidate(new RTCIceCandidate(candidate));
+    }
+
+    function playRemoteAudio(peerId, stream) {
+      let audio = document.getElementById('audio-' + peerId);
+      if (!audio) {
+        audio = document.createElement('audio');
+        audio.id = 'audio-' + peerId;
+        audio.autoplay = true;
+        audio.playsInline = true;
+        document.getElementById('audio-elements').appendChild(audio);
+      }
+      audio.srcObject = stream;
+      setupRemoteVolumeMeter(peerId, stream);
+    }
+
+    function setupRemoteVolumeMeter(peerId, stream) {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const source = ctx.createMediaStreamSource(stream);
+      const analyzer = ctx.createAnalyser();
+      analyzer.fftSize = 256;
+      source.connect(analyzer);
+      audioAnalyzers[peerId] = analyzer;
+
+      const data = new Uint8Array(analyzer.frequencyBinCount);
+      function update() {
+        if (!peers[peerId]) return;
+        analyzer.getByteFrequencyData(data);
+        const avg = data.reduce((a, b) => a + b, 0) / data.length;
+        const percent = Math.min(100, avg * 2);
+
+        const fill = document.querySelector(`#participant-${peerId} .volume-fill`);
+        if (fill) fill.style.width = percent + '%';
+
+        const card = document.getElementById('participant-' + peerId);
+        if (card) {
+          if (percent > 15) card.classList.add('speaking');
+          else card.classList.remove('speaking');
+        }
+        requestAnimationFrame(update);
+      }
+      update();
+    }
+
+    function addParticipantUI(peerId) {
+      if (document.getElementById('participant-' + peerId)) return;
+      const list = document.getElementById('participants-list');
+      const div = document.createElement('div');
+      div.className = 'participant';
+      div.id = 'participant-' + peerId;
+      div.innerHTML = `
+        <div class="avatar">${peerId.slice(0, 2).toUpperCase()}</div>
+        <div class="participant-info">
+          <div class="participant-name">משתתף ${peerId.slice(0, 4)}</div>
+          <div class="participant-status">מתחבר...</div>
+        </div>
+        <div class="volume-meter"><div class="volume-fill"></div></div>
+      `;
+      list.appendChild(div);
+    }
+
+    function updateMyParticipant() {
+      const list = document.getElementById('participants-list');
+      const div = document.createElement('div');
+      div.className = 'participant';
+      div.id = 'participant-me';
+      div.innerHTML = `
+        <div class="avatar" style="background: linear-gradient(135deg, #10b981, #059669);">את</div>
+        <div class="participant-info">
+          <div class="participant-name">את/ה</div>
+          <div class="participant-status">מחובר</div>
+        </div>
+        <div class="volume-meter"><div class="volume-fill" id="my-volume"></div></div>
+      `;
+      list.insertBefore(div, list.firstChild);
+    }
+
+    function updatePeerStatus(peerId, state) {
+      const statusEl = document.querySelector(`#participant-${peerId} .participant-status`);
+      if (!statusEl) return;
+      const stateText = {
+        'new': 'חדש', 'connecting': 'מתחבר...', 'connected': 'מחובר ✓',
+        'disconnected': 'מנותק', 'failed': 'חיבור נכשל', 'closed': 'נסגר'
+      }[state] || state;
+      statusEl.textContent = stateText;
+    }
+
+    function removePeer(peerId) {
+      if (peers[peerId]) { peers[peerId].close(); delete peers[peerId]; }
+      const el = document.getElementById('participant-' + peerId);
+      if (el) el.remove();
+      const audio = document.getElementById('audio-' + peerId);
+      if (audio) audio.remove();
+      delete audioAnalyzers[peerId];
+    }
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      document.getElementById('mute-icon').textContent = isMuted ? '🔇' : '🎤';
+      document.getElementById('mute-text').textContent = isMuted ? 'בטל השתקה' : 'השתק';
+      document.getElementById('mute-btn').classList.toggle('active', isMuted);
+    }
+
+    function leaveRoom() {
+      if (ws) { ws.close(); ws = null; }
+      Object.keys(peers).forEach(removePeer);
+      if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); rawStream = null; }
+      if (audioContext) { audioContext.close(); audioContext = null; }
+      document.getElementById('participants-list').innerHTML = '';
+      document.getElementById('audio-elements').innerHTML = '';
+      filterMode = 'basic';
+      pttActive = false;
+      isMuted = false;
+      showHome();
+    }
+  </script>
+</body>
+</html>

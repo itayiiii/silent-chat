@@ -6,6 +6,12 @@
   <meta name="theme-color" content="#0a0e1a" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="שיחה שקטה" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="description" content="דברו בבירור באוזניות גם בסביבה רועשת – כמו במסעדה" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <title>שיחה שקטה</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -93,6 +99,17 @@
     }
     .btn-danger { background: var(--danger); color: #fff; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* כפתור "התקן כאפליקציה" - מופיע רק כשאפשר להתקין, ונעלם כשהאפליקציה כבר מותקנת */
+    .btn-install {
+      display: none;
+      background: transparent;
+      color: var(--accent);
+      border: 1px dashed rgba(244, 162, 97, 0.55);
+      font-size: 15px;
+      padding: 14px 20px;
+    }
+    .btn-install.visible { display: block; }
 
     .join-screen { justify-content: center; align-items: center; text-align: center; }
     .code-input {
@@ -493,6 +510,7 @@
       </div>
       <button class="btn btn-primary" onclick="showCreate()">צור חדר חדש</button>
       <button class="btn btn-secondary" onclick="showJoin()">הצטרף לחדר</button>
+      <button class="btn btn-install" id="install-btn" onclick="installApp()">📲 התקן כאפליקציה</button>
     </div>
   </div>
 
@@ -630,6 +648,26 @@
         <button class="btn btn-purple" style="flex:1;" id="enroll-start-btn" onclick="beginEnrollmentRecording()">התחל</button>
         <button class="btn btn-secondary" style="flex:1;" onclick="cancelEnrollment()">ביטול</button>
       </div>
+    </div>
+  </div>
+
+  <!-- מודאל הוראות התקנה (אייפון/אייפד - שם אין כפתור התקנה אוטומטי) -->
+  <div id="install-modal" class="modal-backdrop" onclick="hideInstallHelp()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3>📲 התקנה כאפליקציה</h3>
+      <div class="mode-desc">
+        <strong>1. לחץ על כפתור השיתוף</strong>
+        <p>הריבוע עם החץ למעלה ⬆️ - בסרגל של הדפדפן</p>
+      </div>
+      <div class="mode-desc">
+        <strong>2. בחר "הוסף למסך הבית"</strong>
+        <p>אם לא רואים - גלול למטה ברשימת האפשרויות</p>
+      </div>
+      <div class="mode-desc">
+        <strong>3. לחץ "הוסף"</strong>
+        <p>האייקון של שיחה שקטה יופיע במסך הבית, ומשם היא תיפתח כמו אפליקציה</p>
+      </div>
+      <button class="btn btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideInstallHelp()">הבנתי</button>
     </div>
   </div>
 
@@ -1467,6 +1505,62 @@
       pttActive = false;
       isMuted = false;
       showHome();
+    }
+
+    // =========================================================================
+    // התקנה כאפליקציה (PWA)
+    // אנדרואיד/כרום: הדפדפן שולח אירוע beforeinstallprompt ואנחנו מציגים כפתור.
+    // אייפון/אייפד: אין אירוע כזה - מציגים הוראות "הוסף למסך הבית".
+    // =========================================================================
+    let deferredInstallPrompt = null;
+
+    function isStandalone() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+    function isIOS() {
+      return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    }
+    function showInstallButton() {
+      if (isStandalone()) return;
+      document.getElementById('install-btn').classList.add('visible');
+    }
+    function hideInstallButton() {
+      document.getElementById('install-btn').classList.remove('visible');
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredInstallPrompt = e;
+      showInstallButton();
+    });
+    window.addEventListener('appinstalled', () => {
+      deferredInstallPrompt = null;
+      hideInstallButton();
+      showToast('האפליקציה הותקנה! 🎉', 'success');
+    });
+
+    async function installApp() {
+      if (deferredInstallPrompt) {
+        deferredInstallPrompt.prompt();
+        try { await deferredInstallPrompt.userChoice; } catch (e) {}
+        deferredInstallPrompt = null;
+        hideInstallButton();
+      } else {
+        document.getElementById('install-modal').classList.add('visible');
+      }
+    }
+    function hideInstallHelp() {
+      document.getElementById('install-modal').classList.remove('visible');
+    }
+
+    if (isIOS() && !isStandalone()) showInstallButton();
+
+    // Service worker - מאפשר התקנה ופתיחה מהירה גם בקליטה חלשה
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW registration failed:', err));
+      });
     }
   </script>
 </body>

@@ -1,0 +1,6 @@
+node_modules/
+# built by scripts/build-web.mjs (obfuscated copy of ../index.html)
+www/
+# never commit signing keys
+*.keystore
+*.jks

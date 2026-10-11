@@ -1,0 +1,16 @@
+{
+  "appId": "io.github.itayiiii.silentchat",
+  "appName": "שיחה שקטה",
+  "webDir": "www",
+  "backgroundColor": "#0a0e1a",
+  "android": {
+    "allowMixedContent": false,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": false
+  },
+  "plugins": {
+    "SystemBars": {
+      "style": "DARK"
+    }
+  }
+}

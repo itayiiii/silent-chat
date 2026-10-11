@@ -1,0 +1,22 @@
+{
+  "name": "silent-chat-mobile",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Android app (Capacitor) for שיחה שקטה - wraps ../index.html",
+  "type": "module",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "build:android": "node scripts/build-web.mjs && cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3",
+    "javascript-obfuscator": "5.9.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

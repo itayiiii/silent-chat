@@ -811,8 +811,10 @@
       const freqData = new Uint8Array(analyzerNode.frequencyBinCount);
       const timeData = new Float32Array(analyzerNode.fftSize);
 
+      const loopContext = audioContext; // this loop belongs to the current conversation
       function loop() {
-        if (!analyzerNode) return;
+        // Stop after leaving the room (or when a new conversation started its own loop)
+        if (!analyzerNode || audioContext !== loopContext) return;
 
         analyzerNode.getByteFrequencyData(freqData);
         analyzerNode.getFloatTimeDomainData(timeData);

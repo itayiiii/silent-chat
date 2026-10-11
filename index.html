@@ -1514,6 +1514,10 @@
     // =========================================================================
     let deferredInstallPrompt = null;
 
+    // האם אנחנו בתוך אפליקציית ה-APK (Capacitor) ולא בדפדפן
+    const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' &&
+      window.Capacitor.isNativePlatform());
+
     function isStandalone() {
       return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
     }
@@ -1522,7 +1526,7 @@
         (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
     function showInstallButton() {
-      if (isStandalone()) return;
+      if (isStandalone() || isNativeApp) return;
       document.getElementById('install-btn').classList.add('visible');
     }
     function hideInstallButton() {
@@ -1556,8 +1560,8 @@
 
     if (isIOS() && !isStandalone()) showInstallButton();
 
-    // Service worker - מאפשר התקנה ופתיחה מהירה גם בקליטה חלשה
-    if ('serviceWorker' in navigator) {
+    // Service worker - מאפשר התקנה ופתיחה מהירה גם בקליטה חלשה (רק באתר, לא בתוך ה-APK)
+    if ('serviceWorker' in navigator && !isNativeApp) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW registration failed:', err));
       });

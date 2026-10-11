@@ -100,16 +100,46 @@
     .btn-danger { background: var(--danger); color: #fff; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* כפתור "התקן כאפליקציה" - מופיע רק כשאפשר להתקין, ונעלם כשהאפליקציה כבר מותקנת */
+    /* כפתור "התקן כאפליקציה" - השורה שלו מופיעה רק כשאפשר להתקין, ונעלמת כשהאפליקציה כבר מותקנת */
     .btn-install {
-      display: none;
       background: transparent;
       color: var(--accent);
       border: 1px dashed rgba(244, 162, 97, 0.55);
       font-size: 15px;
       padding: 14px 20px;
     }
-    .btn-install.visible { display: block; }
+    .install-row { display: none; }
+    .install-row.visible { display: flex; }
+
+    /* כפתורי עזרה "?" - כל אחד פותח הסבר קצר על הדבר שלידו */
+    .with-help { display: flex; align-items: center; gap: 10px; }
+    .with-help > .btn, .with-help > .control-btn, .with-help > .ptt-button { flex: 1; min-width: 0; }
+    .help-btn {
+      flex: none;
+      position: relative;
+      width: 30px; height: 30px;
+      padding: 0;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-dim);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .help-btn::after { content: ''; position: absolute; inset: -8px; } /* אזור לחיצה גדול יותר מהעיגול */
+    .help-btn:active { transform: scale(0.92); }
+    .help-btn.sm { width: 22px; height: 22px; font-size: 12px; }
+    .help-btn.sm::after { inset: -10px; }
+    .title-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .section-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-dim); padding: 0 4px; }
+    .help-body p { font-size: 15px; line-height: 1.6; color: var(--text); margin-bottom: 10px; }
+    .help-body p:last-child { margin-bottom: 0; }
 
     .join-screen { justify-content: center; align-items: center; text-align: center; }
     .code-input {
@@ -156,7 +186,7 @@
       border-radius: 14px;
       border: 1px solid var(--border);
     }
-    .room-code-label { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; }
+    .room-code-label { font-size: 11px; color: var(--text-dim); margin-bottom: 2px; display: flex; align-items: center; gap: 6px; }
     .room-code { font-size: 20px; font-weight: 700; letter-spacing: 0.2em; color: var(--accent); }
     .room-status {
       font-size: 12px;
@@ -254,6 +284,23 @@
       justify-content: center;
       color: #fff;
     }
+    /* "?" קטן בפינה של כל מצב סינון */
+    .filter-mode .mode-help {
+      position: absolute;
+      top: -7px;
+      right: -7px;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .filter-mode .mode-help::after { content: ''; position: absolute; inset: -7px; }
 
     .voice-enrollment-section {
       background: linear-gradient(135deg, rgba(167, 139, 250, 0.1), rgba(124, 58, 237, 0.05));
@@ -302,7 +349,7 @@
     }
 
     .ptt-button {
-      display: none;
+      display: block;
       width: 100%;
       padding: 20px;
       border-radius: 14px;
@@ -316,9 +363,9 @@
       -webkit-user-select: none;
       text-align: center;
       transition: all 0.1s;
-      margin-top: 10px;
     }
-    .ptt-button.visible { display: block; }
+    .ptt-row { display: none; margin-top: 10px; }
+    .ptt-row.visible { display: flex; }
     .ptt-button.pressed {
       background: var(--accent);
       color: #000;
@@ -382,6 +429,7 @@
       display: flex;
       gap: 8px;
     }
+    .controls > .with-help { flex: 1; min-width: 0; gap: 6px; }
     .control-btn {
       flex: 1;
       padding: 12px;
@@ -508,16 +556,25 @@
       <div class="info-box">
         💡 העדיפו אוזניות חוטיות. כולם צריכים להיות באותה רשת Wi-Fi או Hotspot.
       </div>
-      <button class="btn btn-primary" onclick="showCreate()">צור חדר חדש</button>
-      <button class="btn btn-secondary" onclick="showJoin()">הצטרף לחדר</button>
-      <button class="btn btn-install" id="install-btn" onclick="installApp()">📲 התקן כאפליקציה</button>
+      <div class="with-help">
+        <button class="btn btn-primary" onclick="showCreate()">צור חדר חדש</button>
+        <button class="help-btn" onclick="showHelp('create')" aria-label="הסבר">?</button>
+      </div>
+      <div class="with-help">
+        <button class="btn btn-secondary" onclick="showJoin()">הצטרף לחדר</button>
+        <button class="help-btn" onclick="showHelp('join')" aria-label="הסבר">?</button>
+      </div>
+      <div class="with-help install-row" id="install-row">
+        <button class="btn btn-install" id="install-btn" onclick="installApp()">📲 התקן כאפליקציה</button>
+        <button class="help-btn" onclick="showHelp('install')" aria-label="הסבר">?</button>
+      </div>
     </div>
   </div>
 
   <div id="screen-join" class="screen join-screen hidden">
     <button class="back-btn" onclick="showHome()">×</button>
     <div class="logo">🔗</div>
-    <h2 class="title" style="font-size: 24px;">הזן קוד חדר</h2>
+    <h2 class="title title-row" style="font-size: 24px;">הזן קוד חדר <button class="help-btn" onclick="showHelp('code-input')" aria-label="הסבר">?</button></h2>
     <p class="subtitle">קבלת הקוד ממי שיצר את החדר</p>
     <input type="text" id="room-code-input" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
     <button class="btn btn-primary" style="width: 100%; max-width: 320px;" onclick="joinRoom()">הצטרף</button>
@@ -526,43 +583,51 @@
   <div id="screen-room" class="screen room hidden">
     <div class="room-header">
       <div>
-        <div class="room-code-label">קוד החדר</div>
+        <div class="room-code-label">קוד החדר <button class="help-btn sm" onclick="showHelp('room-code')" aria-label="הסבר">?</button></div>
         <div class="room-code" id="current-room-code">------</div>
       </div>
-      <div class="room-status">
-        <span class="status-dot"></span>
-        <span id="connection-status">מתחבר...</span>
+      <div class="with-help" style="gap: 8px;">
+        <div class="room-status">
+          <span class="status-dot"></span>
+          <span id="connection-status">מתחבר...</span>
+        </div>
+        <button class="help-btn sm" onclick="showHelp('status')" aria-label="הסבר">?</button>
       </div>
     </div>
 
     <div class="filter-section">
       <div class="filter-title">
         <span>מצב סינון 🎚️</span>
-        <span class="info-icon" onclick="showFilterInfo()">?</span>
+        <button class="help-btn sm" onclick="showFilterInfo()" aria-label="הסבר על כל המצבים">?</button>
       </div>
       <div class="filter-modes">
         <button class="filter-mode" data-mode="off" onclick="setFilterMode('off')">
+          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-off')">?</span>
           <span class="icon">🔊</span>
           <span>כבוי</span>
           <span class="hint">ללא</span>
         </button>
         <button class="filter-mode active" data-mode="basic" onclick="setFilterMode('basic')">
+          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-basic')">?</span>
           <span class="icon">🎵</span>
           <span>בסיסי</span>
           <span class="hint">רעש</span>
         </button>
         <button class="filter-mode" data-mode="smart" onclick="setFilterMode('smart')">
+          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-smart')">?</span>
           <span class="icon">🎯</span>
           <span>חכם</span>
           <span class="hint">עצמה</span>
         </button>
         <button class="filter-mode voice-mode" data-mode="voice" onclick="setFilterMode('voice')">
+          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-voice')">?</span>
           <span class="icon">🧬</span>
           <span>זיהוי</span>
           <span class="hint">קולי</span>
           <span id="voice-enrolled-badge" class="badge" style="display:none;">✓</span>
         </button>
         <button class="filter-mode" data-mode="ptt" onclick="setFilterMode('ptt')">
+          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-ptt')">?</span>
           <span class="icon">🎙️</span>
           <span>PTT</span>
           <span class="hint">ידני</span>
@@ -570,7 +635,7 @@
       </div>
 
       <div id="voice-enrollment" class="voice-enrollment-section">
-        <div class="enroll-title">🧬 זיהוי קול - רישום</div>
+        <div class="enroll-title with-help" style="gap: 8px;">🧬 זיהוי קול - רישום <button class="help-btn sm" onclick="showHelp('enroll')" aria-label="הסבר">?</button></div>
         <div class="enroll-desc">
           לפני שימוש, צריך לרשום את הקול שלך (5 שניות). המערכת תעביר לאחרים רק את הקול שלך.
         </div>
@@ -580,22 +645,32 @@
         </button>
       </div>
 
-      <div id="ptt-button" class="ptt-button">
-        🎙️ לחץ והחזק כדי לדבר
+      <div class="with-help ptt-row" id="ptt-row">
+        <div id="ptt-button" class="ptt-button">
+          🎙️ לחץ והחזק כדי לדבר
+        </div>
+        <button class="help-btn" onclick="showHelp('ptt')" aria-label="הסבר">?</button>
       </div>
     </div>
 
+    <div class="section-label">משתתפים <button class="help-btn sm" onclick="showHelp('participants')" aria-label="הסבר">?</button></div>
     <div class="participants" id="participants-list"></div>
 
     <div class="controls">
-      <button class="control-btn" id="mute-btn" onclick="toggleMute()">
-        <span id="mute-icon">🎤</span>
-        <span id="mute-text">השתק</span>
-      </button>
-      <button class="control-btn btn-danger" onclick="leaveRoom()" style="color: #fff;">
-        <span>❌</span>
-        <span>עזוב</span>
-      </button>
+      <div class="with-help">
+        <button class="control-btn" id="mute-btn" onclick="toggleMute()">
+          <span id="mute-icon">🎤</span>
+          <span id="mute-text">השתק</span>
+        </button>
+        <button class="help-btn" onclick="showHelp('mute')" aria-label="הסבר">?</button>
+      </div>
+      <div class="with-help">
+        <button class="control-btn btn-danger" onclick="leaveRoom()" style="color: #fff;">
+          <span>❌</span>
+          <span>עזוב</span>
+        </button>
+        <button class="help-btn" onclick="showHelp('leave')" aria-label="הסבר">?</button>
+      </div>
     </div>
 
     <div id="audio-elements"></div>
@@ -668,6 +743,15 @@
         <p>האייקון של שיחה שקטה יופיע במסך הבית, ומשם היא תיפתח כמו אפליקציה</p>
       </div>
       <button class="btn btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideInstallHelp()">הבנתי</button>
+    </div>
+  </div>
+
+  <!-- חלון הסבר כללי - נפתח מכל כפתור "?" -->
+  <div id="help-modal" class="modal-backdrop" onclick="hideHelp()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <h3 id="help-title"></h3>
+      <div id="help-body" class="help-body"></div>
+      <button class="btn btn-secondary" style="width: 100%; margin-top: 18px;" onclick="hideHelp()">הבנתי</button>
     </div>
   </div>
 
@@ -1205,8 +1289,7 @@
       // הצג/הסתר voice enrollment section
       document.getElementById('voice-enrollment').classList.toggle('visible', mode === 'voice');
 
-      const pttBtn = document.getElementById('ptt-button');
-      pttBtn.classList.toggle('visible', mode === 'ptt');
+      document.getElementById('ptt-row').classList.toggle('visible', mode === 'ptt');
       if (mode !== 'ptt') pttActive = false;
 
       // טעינה מחדש של המיקרופון רק אם הסינון של הדפדפן משתנה
@@ -1275,6 +1358,82 @@
     }
     function hideFilterInfo(event) {
       document.getElementById('filter-info-modal').classList.remove('visible');
+    }
+
+    // =========================================================================
+    // הסברים - כל כפתור "?" באפליקציה פותח אחד מהם
+    // =========================================================================
+    const HELP = {
+      'create': { title: 'צור חדר חדש', body: [
+        'פותח חדר שיחה חדש ומציג קוד של 6 ספרות.',
+        'שלח את הקוד לחברים שיושבים איתך. כל מי שמקליד אותו מצטרף לשיחה.',
+        'בפעם הראשונה הטלפון יבקש אישור לשימוש במיקרופון.'] },
+      'join': { title: 'הצטרף לחדר', body: [
+        'אם חבר כבר פתח חדר, בקש ממנו את הקוד (6 ספרות) והקלד אותו.',
+        'אחרי ההצטרפות כולם בחדר שומעים אחד את השני באוזניות.'] },
+      'install': { title: 'התקן כאפליקציה', body: [
+        'מוסיף את שיחה שקטה למסך הבית, כמו אפליקציה רגילה.',
+        'היא תיפתח במסך מלא, בלי שורת הכתובת של הדפדפן.'] },
+      'code-input': { title: 'קוד החדר', body: [
+        '6 ספרות שמופיעות בראש המסך אצל מי שפתח את החדר.',
+        'בקש ממנו את הקוד והקלד אותו כאן.'] },
+      'room-code': { title: 'קוד החדר', body: [
+        'זה המספר של החדר שלך. שתף אותו עם החברים - בוואטסאפ או בקול.',
+        'הם לוחצים "הצטרף לחדר" ומקלידים אותו. כל מי שמקליד את אותו קוד נכנס לאותה שיחה.'] },
+      'status': { title: 'מצב החיבור', body: [
+        'מתחבר... - הטלפון יוצר קשר עם השרת. אחרי הפסקה ארוכה זה יכול לקחת עד דקה, כי השרת צריך להתעורר.',
+        'מחובר - הכל תקין.',
+        'שגיאה / התנתקתי - אין קשר לשרת. בדוק שיש אינטרנט, צא מהחדר ונסה שוב.'] },
+      'mode-off': { title: '🔊 כבוי', body: [
+        'בלי שום סינון - כל מה שהמיקרופון קולט עובר לחברים.',
+        'שימושי כדי להשוות ולשמוע כמה הסינון באמת עוזר.'] },
+      'mode-basic': { title: '🎵 בסיסי', body: [
+        'הסינון המובנה של הטלפון מוריד רעש רקע קבוע, כמו מזגן או המולה כללית.',
+        'הוא לא מבדיל בין הקול שלך לקולות של אנשים אחרים. זה מצב ברירת המחדל.'] },
+      'mode-smart': { title: '🎯 חכם', body: [
+        'כמו בסיסי, ובנוסף המיקרופון נפתח רק כשיש קול חזק - כשאתה מדבר.',
+        'כשאתה שותק, החברים לא שומעים את הרעש סביבך. לפעמים תחילת מילה שקטה נחתכת.'] },
+      'mode-voice': { title: '🧬 זיהוי קולי (ניסיוני)', body: [
+        'אחרי רישום קצר של הקול שלך, רק קול שדומה לשלך עובר לחברים.',
+        'סימן ✓ על הכפתור = הקול שלך כבר רשום.',
+        'עדיין ניסיוני: יכול לטעות אם אתה לוחש, מצונן, או אם מישהו עם קול דומה מדבר לידך.'] },
+      'mode-ptt': { title: '🎙️ לחץ ודבר', body: [
+        'המיקרופון סגור כל הזמן. כל עוד אתה מחזיק את הכפתור הגדול - החברים שומעים אותך.',
+        'הכי אמין במקום רועש מאוד, אבל צריך לזכור ללחוץ.'] },
+      'enroll': { title: 'רישום קול', body: [
+        'מקליט 5 שניות מהקול שלך ושומר "טביעה" שלו - רק בטלפון שלך.',
+        'במצב זיהוי קולי, רק קול שדומה לטביעה עובר לחברים.',
+        'כדאי להקליט במקום שקט ובקול רגיל - לא בלחישה ולא בצעקה.'] },
+      'ptt': { title: 'לחץ ודבר', body: [
+        'לחץ והחזק - החברים שומעים אותך.',
+        'שחרר - המיקרופון נסגר.'] },
+      'participants': { title: 'משתתפים', body: [
+        'כל כרטיס הוא טלפון שמחובר לחדר. הכרטיס הירוק "את/ה" הוא אתה.',
+        'מסגרת כתומה = מי שמדבר עכשיו. הפס הקטן מראה את עוצמת הקול.',
+        'מתחת לשם מופיע מצב החיבור של כל אחד.'] },
+      'mute': { title: 'השתק', body: [
+        'סוגר את המיקרופון שלך - החברים לא שומעים אותך, ואתה ממשיך לשמוע אותם.',
+        'לחיצה נוספת מחזירה את המיקרופון.'] },
+      'leave': { title: 'עזוב', body: [
+        'יוצא מהחדר ומכבה את המיקרופון.',
+        'החברים ממשיכים לדבר ביניהם. אפשר לחזור עם אותו קוד.'] }
+    };
+
+    function showHelp(key) {
+      const item = HELP[key];
+      if (!item) return;
+      document.getElementById('help-title').textContent = item.title;
+      const body = document.getElementById('help-body');
+      body.innerHTML = '';
+      for (const line of item.body) {
+        const p = document.createElement('p');
+        p.textContent = line;
+        body.appendChild(p);
+      }
+      document.getElementById('help-modal').classList.add('visible');
+    }
+    function hideHelp() {
+      document.getElementById('help-modal').classList.remove('visible');
     }
 
     // =========================================================================
@@ -1527,10 +1686,10 @@
     }
     function showInstallButton() {
       if (isStandalone() || isNativeApp) return;
-      document.getElementById('install-btn').classList.add('visible');
+      document.getElementById('install-row').classList.add('visible');
     }
     function hideInstallButton() {
-      document.getElementById('install-btn').classList.remove('visible');
+      document.getElementById('install-row').classList.remove('visible');
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {

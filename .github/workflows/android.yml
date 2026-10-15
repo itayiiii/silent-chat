@@ -7,6 +7,13 @@ name: Android APK
 on:
   push:
     branches: [main]
+    # only when the app itself changes (not for README edits etc.), so testers
+    # don't get a new build - which needs a reinstall - for nothing
+    paths:
+      - index.html
+      - icons/**
+      - mobile/**
+      - .github/workflows/android.yml
   workflow_dispatch:
 
 permissions:

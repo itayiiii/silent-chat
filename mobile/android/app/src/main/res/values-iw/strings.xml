@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="conversation_channel_name">שיחה פעילה</string>
+    <string name="conversation_channel_description">מוצג בזמן שיחה, כדי שהמיקרופון ימשיך לעבוד גם כשהמסך כבוי</string>
+    <string name="conversation_notification_title">שיחה שקטה – שיחה פעילה</string>
+    <string name="conversation_notification_text">המיקרופון ממשיך לעבוד גם כשהמסך כבוי</string>
+</resources>

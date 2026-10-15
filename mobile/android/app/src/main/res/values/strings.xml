@@ -4,4 +4,9 @@
     <string name="title_activity_main">שיחה שקטה</string>
     <string name="package_name">io.github.itayiiii.silentchat</string>
     <string name="custom_url_scheme">io.github.itayiiii.silentchat</string>
+    <!-- "Conversation active" notification (English for phones not set to Hebrew) -->
+    <string name="conversation_channel_name">Active conversation</string>
+    <string name="conversation_channel_description">Shown during a conversation so the microphone keeps working when the screen is off</string>
+    <string name="conversation_notification_title">Silent Chat – conversation active</string>
+    <string name="conversation_notification_text">The microphone keeps working even with the screen off</string>
 </resources>

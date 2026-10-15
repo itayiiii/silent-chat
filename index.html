@@ -896,6 +896,7 @@
       const timeData = new Float32Array(analyzerNode.fftSize);
 
       const loopContext = audioContext; // this loop belongs to the current conversation
+      let driver = 'frame'; // 'frame' = screen frames, 'audio' = the audio-thread ticker
       function loop() {
         // Stop after leaving the room (or when a new conversation started its own loop)
         if (!analyzerNode || audioContext !== loopContext) return;
@@ -953,9 +954,40 @@
         }
 
         updateMyStatusUI(shouldBeOpen, percent, extraStatus);
-        requestAnimationFrame(loop);
+        if (driver === 'frame') requestAnimationFrame(loop);
       }
       loop();
+      // Screen frames stop when the screen is off, which would freeze the smart and voice
+      // filters. Once the audio-thread ticker is running, it drives the loop instead.
+      startAudioTicker(loopContext, () => { if (driver === 'audio') loop(); })
+        .then(ok => { if (ok) driver = 'audio'; });
+    }
+
+    // Calls onTick about 60 times a second from the audio thread.
+    // Unlike requestAnimationFrame, it keeps going when the screen is off.
+    const AUDIO_TICKER_CODE =
+      "registerProcessor('silent-chat-ticker', class extends AudioWorkletProcessor {" +
+      "  constructor() { super(); this.count = 0; }" +
+      "  process() { if (++this.count >= 6) { this.count = 0; this.port.postMessage(0); } return true; }" +
+      "});";
+
+    async function startAudioTicker(ctx, onTick) {
+      try {
+        if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return false;
+        const url = URL.createObjectURL(new Blob([AUDIO_TICKER_CODE], { type: 'application/javascript' }));
+        try { await ctx.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+        if (ctx.state === 'closed') return false;
+        const ticker = new AudioWorkletNode(ctx, 'silent-chat-ticker', { numberOfInputs: 0, numberOfOutputs: 1 });
+        const silence = ctx.createGain();
+        silence.gain.value = 0; // the ticker makes no sound
+        ticker.connect(silence);
+        silence.connect(ctx.destination);
+        ticker.port.onmessage = onTick;
+        return true;
+      } catch (err) {
+        console.warn('Audio ticker unavailable - using screen frames', err);
+        return false;
+      }
     }
 
     // =========================================================================
@@ -1470,6 +1502,7 @@
 
         roomCode = code;
         showRoom();
+        nativeConversation('start'); // Android app: keep the microphone on when the screen turns off
         setStatus('מתחבר לשרת...');
         connectSignaling(isCreator);
       } catch (err) {
@@ -1656,6 +1689,7 @@
     }
 
     function leaveRoom() {
+      nativeConversation('stop');
       if (ws) { ws.close(); ws = null; }
       Object.keys(peers).forEach(removePeer);
       if (rawStream) { rawStream.getTracks().forEach(t => t.stop()); rawStream = null; }
@@ -1678,6 +1712,14 @@
     // האם אנחנו בתוך אפליקציית ה-APK (Capacitor) ולא בדפדפן
     const isNativeApp = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' &&
       window.Capacitor.isNativePlatform());
+
+    // Android app only: while you are in a room, a "conversation active" notification keeps
+    // the microphone working when the screen turns off (see mobile/android/.../CallService.java).
+    function nativeConversation(action) {
+      if (!isNativeApp || typeof window.Capacitor.nativePromise !== 'function') return;
+      window.Capacitor.nativePromise('SilentCall', action, {})
+        .catch(err => console.warn('SilentCall.' + action + ' failed', err));
+    }
 
     function isStandalone() {
       return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;

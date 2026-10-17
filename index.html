@@ -542,11 +542,394 @@
       color: var(--text-dim);
       line-height: 1.5;
     }
+
+    /* =====================================================================================
+       3D keys — the k3 kit v1.1 (Itay's own code, from itayiiii/ridecheck design/3d-kit),
+       inlined so the app stays one file. Below it: Silent Chat's colors and layout for it.
+       ===================================================================================== */
+/* =====================================================================================================
+   k3.css — 3D keys + motion kit, v1.1 (16/10/2026)
+   Taken from ride.bpm 0.9.0 – 0.9.4 (www/app.css "3D buttons", mockup 54; 0.9.4: "when something changes" = the cube).
+   All of this is Itay's own code: no third-party license is involved.
+
+   HOW IT WORKS
+   - A key is a <button class="k3 …">. The button is the hit area and NEVER moves; inside it:
+         .k3-sp (turns: spin / wave / coin / hop)  >  .k3-bb (the beat)  >  .k3-fc (the face: colors, edge, press)
+     The main key also has a back face (.k3-fc.k3-bk) and an edge (.k3-edge) for the coin.
+     K3.wrap(button) in k3.js builds this structure for you.
+   - Every option is a class on <html>, set by K3.apply() in k3.js:
+         b3d                          the 3D look (without it: the flat look)
+         still                        no key motion now (flat, phone "reduce motion", app hidden, riding)
+         mo-spin                      touch = spin (k3.js then puts k3-su0 / k3-sd1 / … on the key's .k3-sp)
+         mo-wave / mo-coin / mo-domino  one occasional motion, for one run (k3.js adds and removes it)
+         mo-shine + sh10 / sh30 / sh60  the passing light
+         bt-thump / bt-metro / bt-drum  the chosen beat motion; bt-on = the beat runs now (--beat, --bdel)
+         pal-light                    light palette (softer shadows, lighter edges)
+   - "When something changes" is a cube that k3.js builds for the turn only, inside a box that stays:
+         box.k3-cubing  >  .k3-cube  >  .k3-cf (the old face) + .k3-cf.k3-cfn (the new face)
+   - Only transform / opacity / box-shadow are animated: no layout changes.
+   ===================================================================================================== */
+
+/* ----------------------------------------------------------------------------------------------- tokens
+   Map your app's colors in :root, e.g. for RideCheck:
+     :root { --k3-surface: var(--panel2); --k3-text: var(--text); --k3-accent: var(--accent); --k3-on-accent: #062230;
+             --k3-line: var(--line); --k3-panel: var(--panel); --k3-bg: var(--bg); --k3-muted: var(--muted); --k3-warn: var(--avoid); }
+   The defaults below sit in :where() (specificity 0), so any :root mapping wins in both palettes.
+   Defaults = ride.bpm's default skin ("המקורי", graphite tone) dark, and its light version. */
+:where(html) {
+  --k3-surface: #272a2f;      /* face of ordinary keys, raised controls            (ride.bpm --sf2) */
+  --k3-text: #eceff4;         /* icons / text on ordinary keys                      (--tx) */
+  --k3-accent: #c8ff00;       /* face of the main key, selected controls            (--ac) */
+  --k3-on-accent: #0f1114;    /* icon / text on the accent                          (--on) */
+  --k3-accent-text: #c8ff00;  /* accent used as text on the page ("?", values)       (--act) */
+  --k3-line: #2b2e33;         /* borders of flat controls                           (--ln) */
+  --k3-panel: #181b20;        /* card surface                                       (--sf) */
+  --k3-bg: #0f1114;           /* page background, grooves                           (--bg) */
+  --k3-muted: #959ba6;        /* secondary text                                     (--mu) */
+  --k3-warn: #ff8a3d;         /* the outlined key ("TAP" in ride.bpm) and its edge  (--warn) */
+  /* --k3-num-font (optional, not set here): font-family of number keys (+5 −5) and steppers, e.g. ride.bpm's mono font.
+     Unset = the app's own font (font-family: var(--k3-num-font) is then invalid → inherits). */
+  --k3a: .55;                 /* shadow strength: .55 on dark, .2 on light (ride.bpm sets it from the palette) */
+}
+:where(html.pal-light) {
+  --k3-surface: #f3f3f3; --k3-text: #141712; --k3-accent: #4a6600; --k3-on-accent: #ffffff; --k3-accent-text: #4a6600;
+  --k3-line: #e0e1e0; --k3-panel: #ffffff; --k3-bg: #f1f3ec; --k3-muted: #5a6052; --k3-warn: #b94f00;
+  --k3a: .2;
+}
+
+/* ----------------------------------------------------------------------------------------------- keys: structure (both looks) */
+.k3 { position: relative; perspective: 420px; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+:root .k3 { padding: 0; }   /* the face fills the button (also over an app rule like "button { padding: 10px 14px }") */
+.k3 > .k3-sp, .k3 .k3-bb, .k3 .k3-fc { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: inherit; }
+.k3 > .k3-sp, .k3 .k3-bb { transform-style: preserve-3d; }
+/* the layers never take the touch: only the button's own box is the hit area (a hopping face can't be tapped above the key) */
+.k3 > .k3-sp { pointer-events: none; }
+.k3 .k3-fc { position: relative; box-sizing: border-box; }
+.k3 .k3-fc.k3-bk, .k3 .k3-edge { display: none; }
+.k3 svg { display: block; flex-shrink: 0; }
+/* ⏯ carries both icons; a k3-playing class on the key or on its row says which one shows (the HTML never changes) */
+.k3-i-pause { display: none; }
+.k3-playing .k3-i-play { display: none; }
+.k3-playing .k3-i-pause { display: contents; }
+.k3-i-play, .k3-i-pause { pointer-events: none; }
+
+/* ---- the kit's key shapes, flat look (ride.bpm's radio row .ctl5: .bp 52×48, .tb 48, .tb.main 60; the big .bump 80) */
+.k3-key, .k3-round, .k3-big, .k3-sq, .k3-wide {
+  display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; box-sizing: border-box;
+  background: var(--k3-surface); color: var(--k3-text); border: 0; font-family: inherit; cursor: pointer;
+}
+.k3-key   { width: 52px; height: 48px; border-radius: 14px; font-weight: 700; font-size: 18px; line-height: 1; font-family: var(--k3-num-font); }
+.k3-round { width: 48px; height: 48px; border-radius: 99px; }
+.k3-round.k3-main { width: 60px; height: 60px; }
+.k3-big   { width: 80px; height: 80px; border-radius: 18px; border: 1px solid var(--k3-line); font-weight: 700; font-size: 26px; line-height: 1; font-family: var(--k3-num-font); }
+.k3-sq    { width: 44px; height: 44px; border-radius: 12px; font-size: 20px; line-height: 1; }  /* an icon key (RideCheck's .icon-btn) */
+.k3-wide  { flex: 1 1 0; min-width: 0; height: 44px; border-radius: 12px; font-size: 14px; }   /* a text key in a row */
+.k3-wide .k3-fc { padding: 0 8px; }
+.k3.k3-main { background: var(--k3-accent); color: var(--k3-on-accent); }
+.k3.on:not(.k3-main) { background: var(--k3-accent); color: var(--k3-on-accent); }               /* a selected text key */
+.k3:active { transform: scale(.96); }                                                            /* flat: what ride.bpm did before */
+.k3:disabled { opacity: .38; }
+.k3-ready .k3.k3-main, .k3.k3-main.k3-ready { box-shadow: 0 0 0 7px color-mix(in srgb, var(--k3-accent) 22%, transparent), 0 0 26px color-mix(in srgb, var(--k3-accent) 40%, transparent); }
+
+/* ----------------------------------------------------------------------------------------------- keys: the 3D look (html.b3d)
+   The face is the surface lit from above (lighter on top, darker below); its side and drop shadow are the surface
+   mixed toward black. --n = the shadow stack at rest, --p = pressed; --ty = how high the face floats, --tp = pressed. */
+html.b3d .k3 { background: none !important; border-color: transparent !important; box-shadow: none !important; }
+html.b3d .k3:active { transform: none; }                       /* the button never moves; the face goes in (below) */
+html.b3d .k3 .k3-fc {
+  --s1: color-mix(in srgb, var(--k3-surface) 50%, #000); --s2: color-mix(in srgb, var(--k3-surface) 28%, #000);
+  --ty: -3px; --tp: 2px;
+  --n: inset 0 1px 0 rgba(255,255,255,.13), inset 0 -3px 5px rgba(0,0,0,.25), 0 4px 0 var(--s1), 0 5px 0 var(--s2), 0 11px 16px rgba(0,0,0,var(--k3a));
+  --p: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -2px 4px rgba(0,0,0,.2), 0 0 0 var(--s1), 0 1px 0 var(--s2), 0 3px 6px rgba(0,0,0,var(--k3a));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k3-surface) 84%, #fff) 0%, var(--k3-surface) 48%, color-mix(in srgb, var(--k3-surface) 86%, #000) 100%);
+  border: 1px solid color-mix(in srgb, var(--k3-surface) 78%, #fff); border-bottom-color: color-mix(in srgb, var(--k3-surface) 85%, #000);
+  transform: translateY(var(--ty)); box-shadow: var(--n);
+  transition: transform .07s ease-out, box-shadow .07s ease-out;
+}
+html.b3d.pal-light .k3 .k3-fc { --s1: color-mix(in srgb, var(--k3-surface) 74%, #000); --s2: color-mix(in srgb, var(--k3-surface) 62%, #000); }
+html.b3d .k3 .k3-fc svg, html.b3d .k3 .k3-fc .k3-tx { filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
+html.b3d.pal-light .k3 .k3-fc svg, html.b3d.pal-light .k3 .k3-fc .k3-tx { filter: drop-shadow(0 1px 0 rgba(255,255,255,.5)); }
+/* the main key (⏯): the accent with a light spot top-left, a thicker side, a colored glow under it */
+html.b3d .k3.k3-main .k3-fc {
+  --s1: color-mix(in srgb, var(--k3-accent) 66%, #000); --s2: color-mix(in srgb, var(--k3-accent) 44%, #000);
+  --ty: -4px; --tp: 1px;
+  --n: inset 0 2px 1px rgba(255,255,255,.55), inset 0 -6px 10px rgba(0,0,0,.18), 0 5px 0 var(--s1), 0 6px 0 var(--s2), 0 13px 22px rgba(0,0,0,var(--k3a)), 0 8px 26px color-mix(in srgb, var(--k3-accent) 20%, transparent);
+  --p: inset 0 2px 1px rgba(255,255,255,.45), inset 0 -4px 8px rgba(0,0,0,.15), 0 0 0 var(--s1), 0 1px 0 var(--s2), 0 4px 8px rgba(0,0,0,var(--k3a));
+  background: radial-gradient(130% 130% at 32% 22%, color-mix(in srgb, var(--k3-accent) 40%, #fff) 0%, color-mix(in srgb, var(--k3-accent) 76%, #fff) 24%, var(--k3-accent) 52%, color-mix(in srgb, var(--k3-accent) 82%, #000) 100%);
+  border: 0;
+}
+html.b3d .k3.k3-main .k3-fc svg { filter: none; }
+/* a selected text key (kit extension, e.g. RideCheck's 🥶 / 👌 / 🥵): the accent face with the ordinary key's light */
+html.b3d .k3.on:not(.k3-main) .k3-fc {
+  --s1: color-mix(in srgb, var(--k3-accent) 62%, #000); --s2: color-mix(in srgb, var(--k3-accent) 40%, #000);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k3-accent) 70%, #fff) 0%, var(--k3-accent) 50%, color-mix(in srgb, var(--k3-accent) 86%, #000) 100%);
+  border-color: color-mix(in srgb, var(--k3-accent) 70%, #fff); border-bottom-color: color-mix(in srgb, var(--k3-accent) 80%, #000);
+}
+/* pressed: the face goes down to --tp and its side shrinks; no other face motion under the finger */
+html.b3d .k3:active .k3-fc { transform: translateY(var(--tp)); box-shadow: var(--p); animation: none !important; }
+html.b3d .k3-ready .k3.k3-main, html.b3d .k3.k3-main.k3-ready { box-shadow: none !important; }
+html.b3d .k3-ready .k3.k3-main .k3-fc, html.b3d .k3.k3-main.k3-ready .k3-fc { box-shadow: var(--n), 0 0 0 7px color-mix(in srgb, var(--k3-accent) 22%, transparent), 0 0 28px color-mix(in srgb, var(--k3-accent) 42%, transparent); }
+
+/* ----------------------------------------------------------------------------------------------- secondary controls
+   Flat base styles first; the 3D treatment follows. ride.bpm raises its small controls "a little" (.stepper button, .loop,
+   .eqsw, .tog2.on → .k3-raise / .k3-step) and its outlined TAP key (.tap → .k3-outline). Chips, segmented buttons,
+   toggles and cards are flat in ride.bpm; their 3D here (.k3-raise on a chip / pill, .k3-groove, .k3-lift) is a kit
+   extension so a whole screen can look 3D. */
+.k3-pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; box-sizing: border-box;
+  border-radius: 12px; background: var(--k3-surface); color: var(--k3-text); border: 1px solid var(--k3-line); font: inherit; font-weight: 500; cursor: pointer; }
+.k3-pill.k3-pri { background: var(--k3-accent); color: var(--k3-on-accent); border-color: var(--k3-accent); font-weight: 700; --k3-edge: var(--k3-accent); }
+.k3-outline { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; box-sizing: border-box;
+  border-radius: 14px; background: transparent; color: var(--k3-warn); border: 1.5px solid var(--k3-warn); font: inherit; font-weight: 700; cursor: pointer; }
+.k3-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.k3-chip { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; box-sizing: border-box; border-radius: 999px;
+  border: 1px solid var(--k3-line); background: transparent; color: var(--k3-text); white-space: nowrap; font: inherit; cursor: pointer; }
+.k3-chip.on { background: var(--k3-text); color: var(--k3-bg); border-color: var(--k3-text); font-weight: 700; --k3-edge: var(--k3-text); }
+.k3-seg { display: flex; background: var(--k3-bg); border: 1px solid var(--k3-line); border-radius: 14px; padding: 4px; gap: 4px; }
+.k3-seg > button { flex: 1; min-height: 40px; border-radius: 10px; color: var(--k3-muted); font: inherit; font-size: 14px; padding: 4px 6px; line-height: 1.15;
+  background: transparent; border: 0; cursor: pointer; }
+.k3-seg > button.on { background: var(--k3-accent); color: var(--k3-on-accent); font-weight: 700; }
+.k3-seg > button[disabled], .k3-chip[disabled] { opacity: .38; cursor: default; }
+/* the switch follows the page direction: in an RTL page "on" puts the knob on the left (like RideCheck's .sw) */
+.k3-tog { position: relative; width: 52px; height: 30px; border-radius: 999px; background: var(--k3-surface); border: 1px solid var(--k3-line);
+  padding: 0; flex-shrink: 0; cursor: pointer; transition: background .15s; --k3-knob: var(--k3-muted); }
+.k3-tog::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 22px; height: 22px; border-radius: 999px;
+  background: var(--k3-knob); transition: inset-inline-start .15s, background .15s; }
+.k3-tog.on { background: var(--k3-accent); border-color: var(--k3-accent); --k3-knob: var(--k3-on-accent); }
+.k3-tog.on::after { inset-inline-start: 25px; }
+.k3-step { display: inline-flex; align-items: center; gap: 6px; direction: ltr; }
+.k3-step > button { width: 34px; height: 34px; border-radius: 10px; background: var(--k3-surface); color: var(--k3-text); border: 0; padding: 0;
+  font-weight: 700; font-size: 17px; line-height: 1; font-family: var(--k3-num-font); cursor: pointer; }
+.k3-step > b { min-width: 44px; text-align: center; font-weight: 700; font-size: 15px; font-family: var(--k3-num-font); color: var(--k3-accent-text); }
+.k3-card { background: var(--k3-panel); border: 1px solid var(--k3-line); border-radius: 20px; padding: 16px; }
+
+/* ---- raised a little (ride.bpm "the small controls"): a top highlight, a 2px side from --k3-edge, a soft shadow */
+html.b3d .k3-raise, html.b3d .k3-step > button {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.09), 0 2px 0 color-mix(in srgb, var(--k3-edge, var(--k3-surface)) 45%, #000), 0 4px 7px rgba(0,0,0,calc(var(--k3a) * .7));
+  transform: translateY(-1px); transition: transform .07s, box-shadow .07s;
+}
+html.b3d .k3-raise:active, html.b3d .k3-step > button:active { transform: translateY(1px); box-shadow: 0 0 0 transparent, 0 1px 3px rgba(0,0,0,calc(var(--k3a) * .7)); }
+html.b3d .k3-chip.k3-raise:not(.on) { background: var(--k3-surface); border-color: transparent; }  /* a raised chip needs a face */
+/* the outlined key (ride.bpm .tap): its side from its own outline color, no top highlight */
+html.b3d .k3-outline { box-shadow: 0 2px 0 color-mix(in srgb, var(--k3-warn) 45%, #000), 0 4px 7px rgba(0,0,0,calc(var(--k3a) * .7)); transform: translateY(-1px); transition: transform .07s, box-shadow .07s; }
+html.b3d .k3-outline:active { transform: translateY(1px); box-shadow: 0 0 0 transparent, 0 1px 3px rgba(0,0,0,calc(var(--k3a) * .7)); }
+/* ---- kit extension: a sunken track (segmented control, switch) whose selected part / knob is raised */
+html.b3d .k3-groove { box-shadow: inset 0 2px 5px rgba(0,0,0,calc(var(--k3a) * .8)), inset 0 -1px 0 rgba(255,255,255,.05); }
+html.b3d .k3-seg.k3-groove > button.on {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 2px 0 color-mix(in srgb, var(--k3-accent) 55%, #000), 0 4px 7px rgba(0,0,0,calc(var(--k3a) * .7));
+  transform: translateY(-1px); transition: transform .07s, box-shadow .07s;
+}
+html.b3d .k3-seg.k3-groove > button.on:active { transform: translateY(1px); box-shadow: 0 0 0 transparent, 0 1px 3px rgba(0,0,0,calc(var(--k3a) * .7)); }
+html.b3d .k3-tog.k3-groove::after {
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--k3-knob) 55%, #fff) 0%, var(--k3-knob) 60%, color-mix(in srgb, var(--k3-knob) 80%, #000) 100%);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--k3-knob) 55%, #000), 0 3px 6px rgba(0,0,0,calc(var(--k3a) * .9));
+}
+/* ---- kit extension: a card that sits a little above the page */
+html.b3d .k3-lift { box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 1px 0 rgba(0,0,0,calc(var(--k3a) * .4)), 0 12px 24px -10px rgba(0,0,0,calc(var(--k3a) * 1.1)); }
+
+/* ----------------------------------------------------------------------------------------------- the settings panel (K3.panel)
+   "כפתורים ותנועה": six rows, each with its "?" (ride.bpm's design screen: segments for look / shine / touch / change,
+   chips for the occasional motion and the beat) */
+.k3-panel { display: flex; flex-direction: column; gap: 8px; }
+.k3-ph { font-size: 19px; font-weight: 700; margin: 0 0 2px; }
+.k3-prow { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.k3-pl { flex: 1; min-width: 0; font-size: 13.5px; color: var(--k3-muted); }
+.k3-q { width: 28px; height: 28px; flex-shrink: 0; border-radius: 999px; border: 1px solid var(--k3-line); background: var(--k3-bg); color: var(--k3-accent-text);
+  font-family: inherit; font-size: 14px; font-weight: 700; line-height: 1; padding: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+.k3-pnote { font-size: 12.5px; line-height: 1.5; color: var(--k3-muted); margin: 4px 0 0; }
+
+/* ----------------------------------------------------------------------------------------------- "כשנוגעים — מסתובב" (touch = spin)
+   the face turns the way the key points (+5 up, −5 down, ⏮ left, ⏭ ⏯ right); two names each, so the next tap starts it over */
+@keyframes k3uA { to { transform: rotateX(360deg); } } @keyframes k3uB { to { transform: rotateX(360deg); } }
+@keyframes k3dA { to { transform: rotateX(-360deg); } } @keyframes k3dB { to { transform: rotateX(-360deg); } }
+@keyframes k3lA { to { transform: rotateY(-360deg); } } @keyframes k3lB { to { transform: rotateY(-360deg); } }
+@keyframes k3rA { to { transform: rotateY(360deg); } } @keyframes k3rB { to { transform: rotateY(360deg); } }
+html.b3d .k3 > .k3-sp.k3-su0 { animation: k3uA .6s cubic-bezier(.3,1.2,.5,1); } html.b3d .k3 > .k3-sp.k3-su1 { animation: k3uB .6s cubic-bezier(.3,1.2,.5,1); }
+html.b3d .k3 > .k3-sp.k3-sd0 { animation: k3dA .6s cubic-bezier(.3,1.2,.5,1); } html.b3d .k3 > .k3-sp.k3-sd1 { animation: k3dB .6s cubic-bezier(.3,1.2,.5,1); }
+html.b3d .k3 > .k3-sp.k3-sl0 { animation: k3lA .6s cubic-bezier(.3,1.2,.5,1); } html.b3d .k3 > .k3-sp.k3-sl1 { animation: k3lB .6s cubic-bezier(.3,1.2,.5,1); }
+html.b3d .k3 > .k3-sp.k3-sr0 { animation: k3rA .6s cubic-bezier(.3,1.2,.5,1); } html.b3d .k3 > .k3-sp.k3-sr1 { animation: k3rB .6s cubic-bezier(.3,1.2,.5,1); }
+
+/* ----------------------------------------------------------------------------------------------- "מדי פעם" (every 20–30 s, once)
+   k3-n1 … k3-n5 = the key's place in its row, left to right (−5 ⏮ ⏯ ⏭ +5): the wave / domino / light travel along it */
+@keyframes k3wave { 0% { transform: rotateY(0); } 28% { transform: rotateY(38deg); } 61% { transform: rotateY(-12deg); } 83% { transform: rotateY(4deg); } 100% { transform: rotateY(0); } }
+html.b3d.mo-wave .k3 > .k3-sp { animation: k3wave .9s ease-in-out both; }
+html.b3d.mo-wave .k3-n2 > .k3-sp { animation-delay: .09s; } html.b3d.mo-wave .k3-n3 > .k3-sp { animation-delay: .18s; }
+html.b3d.mo-wave .k3-n4 > .k3-sp { animation-delay: .27s; } html.b3d.mo-wave .k3-n5 > .k3-sp { animation-delay: .36s; }
+/* coin: the main key turns a full circle — a back face and an edge make it a coin, not a flat card */
+@keyframes k3coin { from { transform: rotateY(0); } to { transform: rotateY(360deg); } }
+html.b3d.mo-coin .k3.k3-main > .k3-sp { animation: k3coin 1s cubic-bezier(.45,0,.2,1) both; }
+html.b3d.mo-coin .k3.k3-main .k3-bb { position: relative; }
+html.b3d.mo-coin .k3.k3-main .k3-fc { transform: translateZ(3px) translateY(var(--ty)); backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+html.b3d.mo-coin .k3.k3-main .k3-fc.k3-bk { display: flex; position: absolute; left: 0; top: 0; transform: rotateY(180deg) translateZ(3px) translateY(var(--ty)); }
+html.b3d.mo-coin .k3.k3-main .k3-edge { display: block; position: absolute; top: var(--ty, -4px); left: 50%; width: 6px; height: 100%; margin-left: -3px; border-radius: 3px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--k3-accent) 80%, #000), color-mix(in srgb, var(--k3-accent) 50%, #000)); transform: rotateY(90deg); }
+/* domino: the faces press in one after the other */
+@keyframes k3dom { 0% { transform: translateY(var(--ty)); box-shadow: var(--n); } 35% { transform: translateY(var(--tp)); box-shadow: var(--p); } 100% { transform: translateY(var(--ty)); box-shadow: var(--n); } }
+html.b3d.mo-domino .k3 .k3-fc { animation: k3dom .34s ease-out both; }
+html.b3d.mo-domino .k3-n2 .k3-fc { animation-delay: .11s; } html.b3d.mo-domino .k3-n3 .k3-fc { animation-delay: .22s; }
+html.b3d.mo-domino .k3-n4 .k3-fc { animation-delay: .33s; } html.b3d.mo-domino .k3-n5 .k3-fc { animation-delay: .44s; }
+/* hop: one key (k3.js picks a visible one) squashes, jumps and lands */
+@keyframes k3hop { 0% { transform: none; } 17% { transform: scale(1.07, .9); } 41% { transform: translateY(-18px) rotateX(16deg) scale(.96, 1.05); } 66% { transform: translateY(0) scale(1.08, .88); } 83% { transform: translateY(-4px) scale(.98, 1.02); } 100% { transform: none; } }
+html.b3d .k3.k3-hop > .k3-sp { animation: k3hop .7s ease-out both; }
+
+/* ----------------------------------------------------------------------------------------------- "אור חולף" (a glint every 10 / 30 / 60 s)
+   one key after the other; it goes with any other option. The sweep itself takes ~0.65 s of the period. */
+html.b3d.mo-shine .k3 .k3-fc { overflow: hidden; }
+html.b3d.mo-shine .k3 .k3-fc::after { content: ""; position: absolute; top: -30%; bottom: -30%; left: 0; width: 45%; pointer-events: none;
+  background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.26), rgba(255,255,255,0)); transform: translateX(-160%) skewX(-20deg); }
+html.b3d.mo-shine .k3.k3-main .k3-fc::after { background: linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.7), rgba(255,255,255,0)); }
+@keyframes k3g10 { 0% { transform: translateX(-160%) skewX(-20deg); } 6.5%, 100% { transform: translateX(330%) skewX(-20deg); } }
+@keyframes k3g30 { 0% { transform: translateX(-160%) skewX(-20deg); } 2.2%, 100% { transform: translateX(330%) skewX(-20deg); } }
+@keyframes k3g60 { 0% { transform: translateX(-160%) skewX(-20deg); } 1.1%, 100% { transform: translateX(330%) skewX(-20deg); } }
+html.b3d.sh10 .k3 .k3-fc::after { animation: k3g10 10s ease-in-out infinite; }
+html.b3d.sh30 .k3 .k3-fc::after { animation: k3g30 30s ease-in-out infinite; }
+html.b3d.sh60 .k3 .k3-fc::after { animation: k3g60 60s ease-in-out infinite; }
+html.b3d.mo-shine .k3-n2 .k3-fc::after { animation-delay: .14s; } html.b3d.mo-shine .k3-n3 .k3-fc::after { animation-delay: .28s; }
+html.b3d.mo-shine .k3-n4 .k3-fc::after { animation-delay: .42s; } html.b3d.mo-shine .k3-n5 .k3-fc::after { animation-delay: .56s; }
+
+/* ----------------------------------------------------------------------------------------------- "עם הקצב" (with the beat)
+   --beat = one beat (ms), --bdel = minus how far into a beat we are now, so the motion lands on the beat (K3.beat).
+   thump: every key dips each beat, the main key pulses · metro: a sway over two beats, ⏮ ⏭ the other way ·
+   drum: the main key = bass drum (beats 1, 3), −5 +5 = snare (2, 4), ⏮ ⏭ = hi-hat (eighths) */
+@keyframes k3thump { 0% { transform: translateY(0); } 9% { transform: translateY(2.5px); } 40%, 100% { transform: translateY(0); } }
+@keyframes k3pulse { 0% { transform: scale(1); } 9% { transform: scale(1.07); } 45%, 100% { transform: scale(1); } }
+html.b3d.bt-on.bt-thump .k3 .k3-bb { animation: k3thump var(--beat, 500ms) ease-out infinite; animation-delay: var(--bdel, 0ms); }
+html.b3d.bt-on.bt-thump .k3.k3-main .k3-bb { animation-name: k3pulse; }
+@keyframes k3sway { 0%, 100% { transform: rotateY(16deg); } 50% { transform: rotateY(-16deg); } }
+html.b3d.bt-on.bt-metro .k3 .k3-bb { animation: k3sway calc(var(--beat, 500ms) * 2) ease-in-out infinite; animation-delay: var(--bdel, 0ms); }
+html.b3d.bt-on.bt-metro .k3-n2 .k3-bb, html.b3d.bt-on.bt-metro .k3-n4 .k3-bb { animation-delay: calc(var(--bdel, 0ms) - var(--beat, 500ms)); }
+@keyframes k3hit { 0% { transform: translateY(var(--tp)); box-shadow: var(--p); } 24%, 100% { transform: translateY(var(--ty)); box-shadow: var(--n); } }
+@keyframes k3tick { 0% { transform: translateY(calc(var(--ty) + 2.5px)); } 55%, 100% { transform: translateY(var(--ty)); } }
+html.b3d.bt-on.bt-drum .k3.k3-main .k3-fc { animation: k3hit calc(var(--beat, 500ms) * 2) ease-out infinite; animation-delay: var(--bdel, 0ms); }
+html.b3d.bt-on.bt-drum .k3-n1 .k3-fc, html.b3d.bt-on.bt-drum .k3-n5 .k3-fc { animation: k3hit calc(var(--beat, 500ms) * 2) ease-out infinite; animation-delay: calc(var(--bdel, 0ms) - var(--beat, 500ms)); }
+html.b3d.bt-on.bt-drum .k3-n2 .k3-fc, html.b3d.bt-on.bt-drum .k3-n4 .k3-fc { animation: k3tick calc(var(--beat, 500ms) / 2) ease-out infinite; animation-delay: var(--bdel, 0ms); }
+
+/* ----------------------------------------------------------------------------------------------- "כשמשהו משתנה — מתהפכים"
+   A cube, as in the approved mockup (ride.bpm 0.9.4 cubeTo, mockup 54 frame י): the old content turns away and the new
+   one turns in — both seen in the middle, like a turning prism. Up (a number that went up, ⏭): the old face goes up and
+   the new one comes from below; down (⏮): the reverse. k3.js (K3.flip / flipKey / roll / rollKey / rollAll) builds it in
+   a box that STAYS, for the turn only, and writes the new content alone after it:
+       box.k3-cubing (perspective: --k3-cp)  >  .k3-cube (the box's own size, turns)  >  .k3-cf (old) + .k3-cf.k3-cfn (new)
+   Faces: translateZ(h/2) and rotateX(∓90deg) translateZ(h/2); the cube: translateZ(−h/2) rotateX(0 → ±90deg).
+   A number: .5s cubic-bezier(.34,1.45,.6,1), perspective 360px; a row: .65s cubic-bezier(.3,1.25,.55,1), perspective
+   600px (both: or 4.5 × the box height when that is more). The old face stays in the normal flow, so the box keeps its
+   size and baseline while it turns (a number in a line of text doesn't jump). */
+.k3-cubing { perspective: var(--k3-cp, 600px); }
+.k3-cube { position: relative; display: block; transform-style: preserve-3d; transform: translateZ(var(--k3-cz, 0px)); }
+.k3-cube > .k3-cf { display: block; width: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.k3-cube > .k3-cfn { position: absolute; left: 0; top: 0; }
+.k3-cube > .k3-cf:not(.k3-cfn) { pointer-events: none; }   /* a picture of what was there: not tappable */
+@keyframes k3cubeU { from { transform: translateZ(var(--k3-cz)) rotateX(0deg); } to { transform: translateZ(var(--k3-cz)) rotateX(90deg); } }
+@keyframes k3cubeD { from { transform: translateZ(var(--k3-cz)) rotateX(0deg); } to { transform: translateZ(var(--k3-cz)) rotateX(-90deg); } }
+/* a number box holds a number with its sign and symbol unit ("−3°", "40%"): one LTR island in RTL text (the box is a
+   neutral object for the text around it, so a "°" left outside it would jump to the wrong side). Hebrew units stay outside. */
+.k3-roll, [data-k3-roll] { display: inline-flex; direction: ltr; unicode-bidi: isolate; }
+.k3-roll > .k3-cube > .k3-cf, [data-k3-roll] > .k3-cube > .k3-cf { white-space: nowrap; }
+
+/* ----------------------------------------------------------------------------------------------- never moving
+   html.still (k3.js): flat, riding, "reduce motion", app hidden. The cube is not stopped by it (it also runs in the flat
+   look); k3.js simply doesn't build it while motion isn't allowed (a plain swap). The phone's "reduce motion" wins over all. */
+html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.still .k3 .k3-fc::after { animation: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  .k3 > .k3-sp, .k3 .k3-bb, .k3 .k3-fc, .k3 .k3-fc::after, .k3-cube { animation: none !important; }
+}
+
+
+    /* ---- Silent Chat's colors for the kit */
+    :root { --k3-surface: #28315a; --k3-text: var(--text); --k3-accent: var(--accent); --k3-on-accent: #2a1606;
+            --k3-accent-text: var(--accent); --k3-line: rgba(255,255,255,.1); --k3-panel: var(--bg-card); --k3-bg: var(--bg);
+            --k3-muted: var(--text-dim); --k3-warn: var(--danger); --k3a: .55; }
+
+    /* ---- home: settings gear, 3D keys (flat look = the old look) */
+    .home { position: relative; }
+    .home-top { position: absolute; top: 16px; inset-inline-end: 16px; display: flex; align-items: center; gap: 8px; z-index: 2; }
+    .gear-btn { width: 44px; height: 44px; border-radius: 14px; background: var(--k3-surface); border: 1px solid var(--k3-line);
+      font-size: 20px; color: var(--text); padding: 0; cursor: pointer; }
+    .home-key, .join-key { height: 60px; border-radius: 18px; font-size: 17px; font-weight: 700; }
+    .join-key { width: 100%; max-width: 320px; height: 56px; }
+    html:not(.b3d) .btn-primary.k3-main { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; }
+
+    /* ---- the five modes: bigger tiles, 3 + 2, left to right (off on the left) */
+    .mode-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px 10px; padding-top: 6px; direction: ltr; }
+    .mode-tile { position: relative; grid-column: span 2; direction: rtl; }
+    .mode-tile.wide { grid-column: span 3; }
+    .mode-tile > .filter-mode { width: 100%; height: 92px; border-radius: 16px; background: transparent;
+      border: 1px solid var(--k3-line); padding: 0; font-size: 13px; }
+    .mode-tile .k3-fc { flex-direction: column; gap: 4px; }
+    .mode-tile .icon { font-size: 27px; line-height: 1.05; }
+    .mode-tile .name { font-size: 15.5px; font-weight: 700; }
+    .mode-tile .hint { font-size: 11.5px; font-weight: 500; color: var(--text-dim); opacity: 1; }
+    .mode-tile .filter-mode.on .hint { color: inherit; opacity: .78; }
+    .mode-tile.voice .filter-mode { --k3-accent: var(--accent-2); --k3-on-accent: #1b0f3a; }
+    .mode-tile > .mode-help { position: absolute; z-index: 2; top: -9px; inset-inline-end: -5px; width: 26px; height: 26px;
+      border-radius: 50%; background: var(--bg-elevated); border: 1px solid rgba(255,255,255,.25); color: var(--text-dim);
+      font-family: inherit; font-size: 13px; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center;
+      padding: 0; cursor: pointer; }
+    .mode-tile > .mode-help::after { content: ''; position: absolute; inset: -7px; }
+    .mode-tile > .badge { position: absolute; z-index: 2; top: -9px; inset-inline-start: -5px; width: 22px; height: 22px;
+      border-radius: 50%; background: var(--success); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; }
+
+    /* ---- push to talk: the big main key */
+    .ptt-row .ptt-button.k3 { height: 76px; padding: 0; border-radius: 18px; }
+    html:not(.b3d) .ptt-button.k3-main { background: var(--bg-card); color: var(--text); }
+    html:not(.b3d) .ptt-button.k3-main.pressed { background: var(--accent); color: #000; }
+    html.b3d .k3.pressed .k3-fc { transform: translateY(var(--tp)); box-shadow: var(--p); }
+
+    /* ---- the personal tuning card */
+    .tune { margin-top: 14px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 16px; padding: 12px 12px 10px; }
+    .tune-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .tune-title { font-size: 14px; color: var(--text-dim); }
+    .tune-title b { color: var(--text); display: inline-block; }
+    .tune-note { font-size: 12.5px; line-height: 1.5; color: var(--text-dim); padding: 8px 0 4px; border-top: 1px solid var(--border); }
+    .tune-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-top: 1px solid var(--border); }
+    .tune-row.col { flex-direction: column; align-items: stretch; gap: 8px; }
+    .tune-line { display: flex; align-items: center; gap: 8px; }
+    .tune-label { flex: 1; min-width: 0; font-size: 13.5px; line-height: 1.35; }
+    .tune-label small { display: block; color: var(--text-dim); font-size: 11.5px; }
+    .tune .k3-step > button { width: 36px; height: 36px; }
+    .tune .k3-step > b { min-width: 58px; font-size: 14px; }
+    .tune .k3-step .num { display: inline-block; }
+    .match-read { font-size: 13.5px; white-space: nowrap; color: var(--text-dim); }
+    .match-read.yes { color: var(--success); }
+    .match-read.no { color: var(--danger); }
+    .meter { position: relative; height: 18px; border-radius: 999px; background: var(--bg); direction: ltr;
+      box-shadow: inset 0 2px 5px rgba(0,0,0,.45), inset 0 -1px 0 rgba(255,255,255,.05); }
+    .meter.big { height: 22px; touch-action: none; cursor: pointer; }
+    .meter-fill { position: absolute; top: 3px; bottom: 3px; left: 3px; width: 0; border-radius: 999px; max-width: calc(100% - 6px);
+      background: linear-gradient(90deg, var(--success), var(--accent)); }
+    .meter-fill.purple { background: linear-gradient(90deg, #6d4bd8, var(--accent-2)); }
+    .meter-noise { position: absolute; top: 0; bottom: 0; left: 0; width: 0; border-radius: 999px 0 0 999px;
+      background: repeating-linear-gradient(135deg, rgba(148,163,184,.28) 0 5px, rgba(148,163,184,.12) 5px 10px); }
+    .meter-line { position: absolute; top: -7px; bottom: -7px; width: 3px; margin-left: -1.5px; left: 50%; background: #fff;
+      border-radius: 2px; box-shadow: 0 0 0 1px rgba(0,0,0,.35); pointer-events: none; }
+    .meter-knob { position: absolute; left: 50%; bottom: -13px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff 0%, #dfe6f2 55%, #9aa6bd 100%); box-shadow: 0 2px 0 #6b768d, 0 3px 6px rgba(0,0,0,.5); }
+    .meter-legend { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-dim); margin-top: 18px; direction: ltr; }
+    .meter-legend .noise { color: #a5b0c2; }
+    .tune .k3-pill { height: 36px; font-size: 13px; padding: 0 12px; flex-shrink: 0; }
+    .tune-adv summary { list-style: none; cursor: pointer; font-size: 13px; color: var(--text-dim); padding: 9px 0 2px; border-top: 1px solid var(--border); }
+    .tune-adv summary::-webkit-details-marker { display: none; }
+    .tune-adv summary::before { content: '▾ '; }
+    .tune-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; }
+    #connection-status { display: inline-block; }
+
+    /* ---- mute / leave as 3D keys */
+    .controls .control-btn.k3 { height: 54px; border-radius: 16px; font-size: 15px; padding: 0; }
+    .controls .control-btn.k3 .k3-fc { gap: 6px; }
+    .controls .leave-key { --k3-surface: #c93a3a; }
+
+    /* ---- the settings sheet */
+    .settings .set-sec { font-size: 15px; font-weight: 700; margin: 6px 0 2px; }
+    .settings .k3-q { width: 30px; height: 30px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.2); color: var(--text-dim); }
+    .modal.settings { max-height: 92vh; }
   </style>
 </head>
 <body>
 
   <div id="screen-home" class="screen home">
+    <div class="home-top">
+      <button class="help-btn sm" onclick="showHelp('settings')" aria-label="הסבר">?</button>
+      <button class="gear-btn k3-raise" onclick="openSettings()" aria-label="הגדרות">⚙️</button>
+    </div>
     <div class="home-header">
       <div class="logo">🎧</div>
       <h1 class="title">שיחה שקטה</h1>
@@ -557,15 +940,15 @@
         💡 העדיפו אוזניות חוטיות. כולם צריכים להיות באותה רשת Wi-Fi או Hotspot.
       </div>
       <div class="with-help">
-        <button class="btn btn-primary" onclick="showCreate()">צור חדר חדש</button>
+        <button class="btn btn-primary k3 k3-main home-key" data-k3-n="1" onclick="showCreate()">צור חדר חדש</button>
         <button class="help-btn" onclick="showHelp('create')" aria-label="הסבר">?</button>
       </div>
       <div class="with-help">
-        <button class="btn btn-secondary" onclick="showJoin()">הצטרף לחדר</button>
+        <button class="btn btn-secondary k3 home-key" data-k3-n="2" onclick="showJoin()">הצטרף לחדר</button>
         <button class="help-btn" onclick="showHelp('join')" aria-label="הסבר">?</button>
       </div>
       <div class="with-help install-row" id="install-row">
-        <button class="btn btn-install" id="install-btn" onclick="installApp()">📲 התקן כאפליקציה</button>
+        <button class="btn btn-install k3-raise" id="install-btn" onclick="installApp()">📲 התקן כאפליקציה</button>
         <button class="help-btn" onclick="showHelp('install')" aria-label="הסבר">?</button>
       </div>
     </div>
@@ -577,7 +960,7 @@
     <h2 class="title title-row" style="font-size: 24px;">הזן קוד חדר <button class="help-btn" onclick="showHelp('code-input')" aria-label="הסבר">?</button></h2>
     <p class="subtitle">קבלת הקוד ממי שיצר את החדר</p>
     <input type="text" id="room-code-input" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
-    <button class="btn btn-primary" style="width: 100%; max-width: 320px;" onclick="joinRoom()">הצטרף</button>
+    <button class="btn btn-primary k3 k3-main join-key" onclick="joinRoom()">הצטרף</button>
   </div>
 
   <div id="screen-room" class="screen room hidden">
@@ -600,56 +983,108 @@
         <span>מצב סינון 🎚️</span>
         <button class="help-btn sm" onclick="showFilterInfo()" aria-label="הסבר על כל המצבים">?</button>
       </div>
-      <div class="filter-modes">
-        <button class="filter-mode" data-mode="off" onclick="setFilterMode('off')">
-          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-off')">?</span>
-          <span class="icon">🔊</span>
-          <span>כבוי</span>
-          <span class="hint">ללא</span>
-        </button>
-        <button class="filter-mode active" data-mode="basic" onclick="setFilterMode('basic')">
-          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-basic')">?</span>
-          <span class="icon">🎵</span>
-          <span>בסיסי</span>
-          <span class="hint">רעש</span>
-        </button>
-        <button class="filter-mode" data-mode="smart" onclick="setFilterMode('smart')">
-          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-smart')">?</span>
-          <span class="icon">🎯</span>
-          <span>חכם</span>
-          <span class="hint">עצמה</span>
-        </button>
-        <button class="filter-mode voice-mode" data-mode="voice" onclick="setFilterMode('voice')">
-          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-voice')">?</span>
-          <span class="icon">🧬</span>
-          <span>זיהוי</span>
-          <span class="hint">קולי</span>
-          <span id="voice-enrolled-badge" class="badge" style="display:none;">✓</span>
-        </button>
-        <button class="filter-mode" data-mode="ptt" onclick="setFilterMode('ptt')">
-          <span class="mode-help" onclick="event.stopPropagation(); showHelp('mode-ptt')">?</span>
-          <span class="icon">🎙️</span>
-          <span>PTT</span>
-          <span class="hint">ידני</span>
-        </button>
-      </div>
-
-      <div id="voice-enrollment" class="voice-enrollment-section">
-        <div class="enroll-title with-help" style="gap: 8px;">🧬 זיהוי קול - רישום <button class="help-btn sm" onclick="showHelp('enroll')" aria-label="הסבר">?</button></div>
-        <div class="enroll-desc">
-          לפני שימוש, צריך לרשום את הקול שלך (5 שניות). המערכת תעביר לאחרים רק את הקול שלך.
+      <div class="filter-modes mode-grid">
+        <div class="mode-tile">
+          <button class="filter-mode k3" data-mode="off" data-k3-n="1" onclick="setFilterMode('off')"><span class="icon">🔊</span><span class="name">כבוי</span><span class="hint">בלי סינון</span></button>
+          <button class="mode-help" onclick="showHelp('mode-off')" aria-label="הסבר">?</button>
         </div>
-        <div class="enroll-status" id="enroll-status">לא נרשם עדיין</div>
-        <button class="btn btn-purple" style="width:100%;" onclick="startEnrollment()">
-          🎤 רשם את הקול שלי
-        </button>
+        <div class="mode-tile">
+          <button class="filter-mode k3 active on" data-mode="basic" data-k3-n="2" onclick="setFilterMode('basic')"><span class="icon">🎵</span><span class="name">בסיסי</span><span class="hint">מוריד רעש רקע</span></button>
+          <button class="mode-help" onclick="showHelp('mode-basic')" aria-label="הסבר">?</button>
+        </div>
+        <div class="mode-tile">
+          <button class="filter-mode k3" data-mode="smart" data-k3-n="3" onclick="setFilterMode('smart')"><span class="icon">🎯</span><span class="name">חכם</span><span class="hint">רק כשאתה מדבר</span></button>
+          <button class="mode-help" onclick="showHelp('mode-smart')" aria-label="הסבר">?</button>
+        </div>
+        <div class="mode-tile wide voice">
+          <button class="filter-mode voice-mode k3" data-mode="voice" data-k3-n="4" onclick="setFilterMode('voice')"><span class="icon">🧬</span><span class="name">זיהוי קולי</span><span class="hint">רק הקול שלך</span></button>
+          <button class="mode-help" onclick="showHelp('mode-voice')" aria-label="הסבר">?</button>
+          <span id="voice-enrolled-badge" class="badge" style="display:none;">✓</span>
+        </div>
+        <div class="mode-tile wide">
+          <button class="filter-mode k3" data-mode="ptt" data-k3-n="5" onclick="setFilterMode('ptt')"><span class="icon">🎙️</span><span class="name">לחץ ודבר</span><span class="hint">מדברים רק כשלוחצים</span></button>
+          <button class="mode-help" onclick="showHelp('mode-ptt')" aria-label="הסבר">?</button>
+        </div>
       </div>
 
       <div class="with-help ptt-row" id="ptt-row">
-        <div id="ptt-button" class="ptt-button">
-          🎙️ לחץ והחזק כדי לדבר
-        </div>
+        <button type="button" id="ptt-button" class="ptt-button k3 k3-main">🎙️ לחץ והחזק כדי לדבר</button>
         <button class="help-btn" onclick="showHelp('ptt')" aria-label="הסבר">?</button>
+      </div>
+
+      <div class="tune k3-lift" id="tune">
+        <div class="tune-head">
+          <span class="tune-title">🎚️ כיוון אישי · <b id="tune-mode-name">בסיסי</b></span>
+          <button class="help-btn sm" onclick="showHelp('tune')" aria-label="הסבר">?</button>
+        </div>
+        <div class="tune-note" id="tune-note"></div>
+
+        <div id="tune-voice">
+          <div class="tune-row">
+            <span class="tune-label"><span id="enroll-status">לא נרשם עדיין</span><small>נשמר רק בטלפון שלך</small></span>
+            <button class="k3-pill k3-raise" id="enroll-btn" onclick="startEnrollment()">🎤 רשום את הקול שלי</button>
+            <button class="help-btn sm" onclick="showHelp('enroll')" aria-label="הסבר">?</button>
+          </div>
+          <div class="tune-row col">
+            <div class="tune-line"><span class="tune-label">התאמה לקול שלך — עכשיו</span><b class="match-read" id="match-read">—</b><button class="help-btn sm" onclick="showHelp('match-now')" aria-label="הסבר">?</button></div>
+            <div class="meter" id="match-meter"><div class="meter-fill purple" id="match-fill"></div><div class="meter-line" id="match-line"></div></div>
+          </div>
+          <div class="tune-row">
+            <span class="tune-label">כמה קפדני הזיהוי<small>יותר = פחות קולות של אחרים, אבל לפעמים נחתך גם שלך</small></span>
+            <div class="k3-step" data-tune="match"><button type="button" data-d="-1" aria-label="פחות">−</button><b><span class="num" dir="ltr">65%</span></b><button type="button" data-d="1" aria-label="יותר">+</button></div>
+            <button class="help-btn sm" onclick="showHelp('match')" aria-label="הסבר">?</button>
+          </div>
+        </div>
+
+        <div id="tune-gate">
+          <div class="tune-row col">
+            <div class="tune-line"><span class="tune-label">סף פתיחה<small>המיקרופון נפתח רק כשהקול עובר את הקו · גוררים את הקו</small></span><button class="help-btn sm" onclick="showHelp('threshold')" aria-label="הסבר">?</button></div>
+            <div class="meter big" id="tune-meter" role="slider" aria-label="סף פתיחה" aria-valuemin="0" aria-valuemax="100">
+              <div class="meter-noise" id="m-noise"></div>
+              <div class="meter-fill" id="m-fill"></div>
+              <div class="meter-line" id="m-line"><span class="meter-knob"></span></div>
+            </div>
+            <div class="meter-legend"><span>שקט</span><span class="noise">▨ הרעש סביבך</span><span>חזק</span></div>
+          </div>
+          <div class="tune-row">
+            <span class="tune-label">סף אוטומטי<small>הקו זז לבד לפי הרעש סביבך</small></span>
+            <button type="button" class="k3-tog k3-groove" data-tog="auto" role="switch" aria-checked="false" aria-label="סף אוטומטי"></button>
+            <button class="help-btn sm" onclick="showHelp('auto')" aria-label="הסבר">?</button>
+          </div>
+          <div class="tune-row" id="row-margin">
+            <span class="tune-label">מרווח מעל הרעש<small>כמה הקול שלך צריך להיות חזק מהרעש</small></span>
+            <div class="k3-step" data-tune="margin"><button type="button" data-d="-1" aria-label="פחות">−</button><b><span class="num" dir="ltr">+12</span></b><button type="button" data-d="1" aria-label="יותר">+</button></div>
+            <button class="help-btn sm" onclick="showHelp('margin')" aria-label="הסבר">?</button>
+          </div>
+          <div class="tune-row">
+            <span class="tune-label">זמן החזקה<small>כמה המיקרופון נשאר פתוח אחרי שסיימת משפט</small></span>
+            <div class="k3-step" data-tune="hold"><button type="button" data-d="-1" aria-label="פחות">−</button><b><span class="num" dir="ltr">0.3</span> שנ׳</b><button type="button" data-d="1" aria-label="יותר">+</button></div>
+            <button class="help-btn sm" onclick="showHelp('hold')" aria-label="הסבר">?</button>
+          </div>
+        </div>
+
+        <details class="tune-adv" id="tune-adv">
+          <summary>מתקדם</summary>
+          <div class="tune-row" id="row-ns">
+            <span class="tune-label">סינון רעש של הטלפון<small>במצבים בסיסי וחכם</small></span>
+            <button type="button" class="k3-tog k3-groove" data-tog="ns" role="switch" aria-checked="true" aria-label="סינון רעש של הטלפון"></button>
+            <button class="help-btn sm" onclick="showHelp('ns')" aria-label="הסבר">?</button>
+          </div>
+          <div class="tune-row" id="row-agc">
+            <span class="tune-label">הגברה אוטומטית<small>במצבים בסיסי וחכם</small></span>
+            <button type="button" class="k3-tog k3-groove" data-tog="agc" role="switch" aria-checked="true" aria-label="הגברה אוטומטית"></button>
+            <button class="help-btn sm" onclick="showHelp('agc')" aria-label="הסבר">?</button>
+          </div>
+          <div class="tune-row">
+            <span class="tune-label">רק תדרי דיבור<small>חותך רעשים נמוכים (מזגן) וגבוהים (צלחות)</small></span>
+            <button type="button" class="k3-tog k3-groove" data-tog="band" role="switch" aria-checked="false" aria-label="רק תדרי דיבור"></button>
+            <button class="help-btn sm" onclick="showHelp('band')" aria-label="הסבר">?</button>
+          </div>
+        </details>
+        <div class="tune-foot">
+          <button class="k3-pill k3-raise" onclick="resetTune()">↺ חזרה לברירת המחדל</button>
+          <button class="help-btn sm" onclick="showHelp('reset')" aria-label="הסבר">?</button>
+        </div>
       </div>
     </div>
 
@@ -658,14 +1093,14 @@
 
     <div class="controls">
       <div class="with-help">
-        <button class="control-btn" id="mute-btn" onclick="toggleMute()">
+        <button class="control-btn k3" id="mute-btn" data-k3-n="1" onclick="toggleMute()">
           <span id="mute-icon">🎤</span>
           <span id="mute-text">השתק</span>
         </button>
         <button class="help-btn" onclick="showHelp('mute')" aria-label="הסבר">?</button>
       </div>
       <div class="with-help">
-        <button class="control-btn btn-danger" onclick="leaveRoom()" style="color: #fff;">
+        <button class="control-btn btn-danger k3 leave-key" data-k3-n="2" onclick="leaveRoom()" style="color: #fff;">
           <span>❌</span>
           <span>עזוב</span>
         </button>
@@ -700,7 +1135,7 @@
         <strong>🎙️ לחץ ודבר</strong>
         <p>ידני מלא - הכי אמין.</p>
       </div>
-      <button class="btn btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideFilterInfo()">סגור</button>
+      <button class="btn k3-raise btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideFilterInfo()">סגור</button>
     </div>
   </div>
 
@@ -720,8 +1155,8 @@
         <div class="enroll-progress-fill" id="enroll-progress-fill"></div>
       </div>
       <div style="display: flex; gap: 8px;">
-        <button class="btn btn-purple" style="flex:1;" id="enroll-start-btn" onclick="beginEnrollmentRecording()">התחל</button>
-        <button class="btn btn-secondary" style="flex:1;" onclick="cancelEnrollment()">ביטול</button>
+        <button class="btn k3-raise btn-purple" style="flex:1;" id="enroll-start-btn" onclick="beginEnrollmentRecording()">התחל</button>
+        <button class="btn k3-raise btn-secondary" style="flex:1;" onclick="cancelEnrollment()">ביטול</button>
       </div>
     </div>
   </div>
@@ -742,7 +1177,17 @@
         <strong>3. לחץ "הוסף"</strong>
         <p>האייקון של שיחה שקטה יופיע במסך הבית, ומשם היא תיפתח כמו אפליקציה</p>
       </div>
-      <button class="btn btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideInstallHelp()">הבנתי</button>
+      <button class="btn k3-raise btn-secondary" style="width: 100%; margin-top: 16px;" onclick="hideInstallHelp()">הבנתי</button>
+    </div>
+  </div>
+
+  <!-- הגדרות: כפתורים ותנועה -->
+  <div id="settings-modal" class="modal-backdrop" onclick="closeSettings()">
+    <div class="modal settings" onclick="event.stopPropagation()">
+      <h3>⚙️ הגדרות</h3>
+      <div class="set-sec">🎨 כפתורים ותנועה</div>
+      <div id="k3-panel"></div>
+      <button class="btn btn-secondary k3-raise" style="width: 100%; margin-top: 14px;" onclick="closeSettings()">סגור</button>
     </div>
   </div>
 
@@ -751,13 +1196,625 @@
     <div class="modal" onclick="event.stopPropagation()">
       <h3 id="help-title"></h3>
       <div id="help-body" class="help-body"></div>
-      <button class="btn btn-secondary" style="width: 100%; margin-top: 18px;" onclick="hideHelp()">הבנתי</button>
+      <button class="btn k3-raise btn-secondary" style="width: 100%; margin-top: 18px;" onclick="hideHelp()">הבנתי</button>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
   <script>
+    // =========================================================================
+    // 3D keys — the k3 kit v1.1 (Itay's own code, from itayiiii/ridecheck design/3d-kit)
+    // =========================================================================
+/* =====================================================================================================
+   k3.js — 3D keys + motion kit, v1.1 (16/10/2026). Plain script, no dependencies: <script src="k3.js"><\/script> → window.K3
+   Taken from ride.bpm 0.9.0 – 0.9.4 (app-logic.js cleanMotion / motionAllowed / nextOccMs / beatTiming, app.js k3(),
+   applyMotion, occSchedule / occPlay / occRun, k3Spin, setStatic, rollCls / flipCls / animOnce, 0.9.4 CUBE / navDir /
+   cubeTo / flipSet). Itay's own code. Goes with k3.css. Quick start:
+       K3.init({ storageKey: 'ridecheck.k3' });   // loads the saved settings, wraps every [data-k3] key, sets the <html> classes
+       K3.panel(document.getElementById('k3-panel'), { help: HELP, onHelp: showHelp });   // "כפתורים ותנועה"
+       K3.flipKey('song', song.id, rowEl, rowHTML);   // a new item: the row turns like a cube (⏮ just before: from above)
+       K3.roll(numEl, '125');                         // a number: turns up when it went up, down when it went down
+   ===================================================================================================== */
+(function (root) {
+  'use strict';
+
+  // ------------------------------------------------------------------ settings (pure)
+  // defaults (Itay 16/10): 3D on, "when something changes" = flip; every other motion off
+  var DEFAULTS = { look: '3d', occ: 'none', shine: 'off', beat: 'none', touch: 'press', change: 'flip' };
+  var OPTS = {
+    look: ['3d', 'flat'], occ: ['none', 'wave', 'coin', 'domino', 'hop'], shine: ['off', '10', '30', '60'],
+    beat: ['none', 'thump', 'metro', 'drum'], touch: ['press', 'spin'], change: ['none', 'flip']
+  };
+  // ride.bpm's settings rows (MO_ROWS) word for word: [key, label, [[value, label]…], chips (true) or a segment row (false)]
+  var ROWS = [
+    ['look', 'כפתורים', [['3d', 'תלת־ממד'], ['flat', 'שטוח']], false],
+    ['occ', 'תנועה · מדי פעם', [['none', 'בלי'], ['wave', 'גל'], ['coin', 'מטבע'], ['domino', 'דומינו'], ['hop', 'קפיצה']], true],
+    ['shine', 'אור חולף על הכפתורים', [['off', 'כבוי'], ['10', 'כל 10 שנ׳'], ['30', 'כל 30 שנ׳'], ['60', 'כל דקה']], false],
+    ['beat', 'תנועה · עם הקצב של השיר', [['none', 'בלי'], ['thump', 'קופצים בקצב'], ['metro', 'מטרונום'], ['drum', 'מתופף']], true],
+    ['touch', 'כשנוגעים בכפתור', [['press', 'נלחץ פנימה'], ['spin', 'מסתובב']], false],
+    ['change', 'כשמשהו משתנה (קצב, שיר)', [['none', 'בלי'], ['flip', 'מתהפכים']], false]
+  ];
+  // the key's place in a row, left to right (−5 ⏮ ⏯ ⏭ +5): the wave / domino / light travel along it
+  var KINDS = { m5: 1, prev: 2, play: 3, next: 4, p5: 5 };
+
+  /** each setting checked on its own: a bad value → its default, the rest kept */
+  function clean(d) {
+    var out = {};
+    Object.keys(DEFAULTS).forEach(function (k) { out[k] = d && OPTS[k].indexOf(d[k]) >= 0 ? d[k] : DEFAULTS[k]; });
+    return out;
+  }
+  /** may the keys move now? Never while riding (ride screen, a ride being logged, ≥ 10 km/h), with the phone's
+   *  "reduce motion", or when the app isn't seen */
+  function allowed(s) {
+    return !!s && !s.reduced && !s.rideScreen && !s.riding && !(s.kmh >= 10) && !s.hidden;
+  }
+  /** the next occasional motion: 20–30 s from now (rnd 0..1) */
+  function nextOccMs(rnd) { return 20000 + Math.round(Math.max(0, Math.min(1, rnd)) * 10000); }
+  /** a beat's period (ms) and how far into a beat we are (ms), from a BPM, a position (ms) and the first beat (s, < 0 = unknown) */
+  function beatTiming(bpm, posMs, beatInSec) {
+    if (!(bpm >= 40 && bpm <= 250)) return null;
+    var period = 60000 / bpm;
+    var t = posMs - (beatInSec >= 0 ? beatInSec * 1000 : 0);
+    return { period: period, phase: ((t % period) + period) % period };
+  }
+  /** the number in "18°", "−3", "40%" (NaN when there is none) */
+  function toNum(v) {
+    if (typeof v === 'number') return v;
+    var m = String(v == null ? '' : v).replace(/\u2212/g, '-').match(/-?\d+(?:[.,]\d+)?/);
+    return m ? parseFloat(m[0].replace(',', '.')) : NaN;
+  }
+
+  // ------------------------------------------------------------------ state
+  var doc = root.document;
+  var M = { s: clean(null), key: 'k3.motion', opts: {}, extra: null, touchAt: 0, occT: 0, beatP: 0, beatT0: 0, beatKey: '', beatT: 0, mem: {}, nav: null };
+  var RMQ = (function () { try { return root.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) { return null; } })();
+  /** what allowed() looks at: the phone's "reduce motion", the app hidden, + whatever the app adds (riding, kmh, rideScreen) */
+  function state() {
+    var st = { reduced: !!(RMQ && RMQ.matches), hidden: !!doc.hidden };
+    if (M.opts.state) Object.assign(st, M.opts.state() || {});
+    if (M.extra) Object.assign(st, M.extra);
+    return st;
+  }
+  var flipOk = function () { return M.s.change === 'flip' && allowed(state()); };
+
+  // ------------------------------------------------------------------ storage (a convenience only: wrapped, never throws)
+  function load() { try { var j = root.localStorage.getItem(M.key); return j ? clean(JSON.parse(j)) : null; } catch (e) { return null; } }
+  function save() { try { root.localStorage.setItem(M.key, JSON.stringify(M.s)); } catch (e) { /* private mode, blocked storage */ } }
+
+  // ------------------------------------------------------------------ the <html> classes
+  /** sets the classes for the settings (default: the current ones) and the state; extra = {reduced, riding, …} to force */
+  function apply(settings, extra) {
+    if (settings) M.s = clean(settings);
+    if (extra !== undefined) M.extra = extra || null;
+    var s = M.s, el = doc.documentElement, on3d = s.look === '3d', ok = on3d && allowed(state());
+    el.classList.toggle('b3d', on3d);
+    el.classList.toggle('still', !ok);
+    el.classList.toggle('mo-spin', on3d && s.touch === 'spin');
+    ['10', '30', '60'].forEach(function (x) { el.classList.toggle('sh' + x, ok && s.shine === x); });
+    el.classList.toggle('mo-shine', ok && s.shine !== 'off');
+    ['thump', 'metro', 'drum'].forEach(function (x) { el.classList.toggle('bt-' + x, s.beat === x); });
+    if (!ok) ['mo-wave', 'mo-coin', 'mo-domino'].forEach(function (c) { el.classList.remove(c); });
+    beatSync();
+    if (ok && s.occ !== 'none') { if (!M.occT) occSchedule(); } else { clearTimeout(M.occT); M.occT = 0; }
+    return s;
+  }
+  function get() { return Object.assign({}, M.s); }
+  /** one setting changed (the settings panel): saved and applied at once; a new occasional motion is shown once */
+  function set(k, v) {
+    var s = get();
+    s[k] = v;
+    apply(s);
+    save();
+    if (k === 'occ' && M.s.occ !== 'none') setTimeout(function () { occPlay(M.s.occ); }, 350);
+    return get();
+  }
+  /** light / dark for the kit's tokens: 'light' | 'dark' | 'auto' (the phone's choice, followed live) */
+  function setTheme(mode) {
+    var mq = root.matchMedia ? root.matchMedia('(prefers-color-scheme: dark)') : null;
+    M.theme = mode;
+    var light = mode === 'light' || (mode === 'auto' && mq && !mq.matches);
+    doc.documentElement.classList.toggle('pal-light', !!light);
+    doc.documentElement.style.colorScheme = light ? 'light' : 'dark';
+    if (mq && !M.themeL) {
+      M.themeL = true;
+      try { mq.addEventListener('change', function () { if (M.theme === 'auto') setTheme('auto'); }); } catch (e) { /* old WebView */ }
+    }
+    return light ? 'light' : 'dark';
+  }
+
+  // ------------------------------------------------------------------ keys
+  var sv = function (body, w, sw) {
+    return '<svg width="' + w + '" height="' + w + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + (sw || 2) +
+      '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  };
+  // ride.bpm's own drawings
+  var ICONS = {
+    play: function (w) { return sv('<path d="M8 5.5v13l11-6.5z" fill="currentColor"/>', w || 22); },
+    pause: function (w) { return sv('<path d="M9 5.5v13M15 5.5v13"/>', w || 22, 3.2); },
+    prev: function (w) { return sv('<path d="M18 6.5v11l-9-5.5z"/><path d="M6.5 6.5v11"/>', w || 22); },
+    next: function (w) { return sv('<path d="M6 6.5v11l9-5.5z"/><path d="M17.5 6.5v11"/>', w || 22); }
+  };
+  /** ⏯ with both icons; K3.setPlaying(row or key, true) shows ⏸ (the key's HTML never changes, so a turn is never cut) */
+  function playPause(w) { return '<span class="k3-i-play">' + ICONS.play(w || 26) + '</span><span class="k3-i-pause">' + ICONS.pause(w || 26) + '</span>'; }
+  /** turns a plain <button class="k3" data-k3="play|prev|next|p5|m5|…">content</button> into
+   *  button > .k3-sp > .k3-bb > .k3-fc (+ the coin's back face and edge for the main key). The content is moved, not
+   *  copied: its listeners and references stay. o = {kind, n (place in the row 1–5), main (true for the main key)} */
+  function wrap(btn, o) {
+    if (!btn || btn._k3) return btn;
+    if (btn.querySelector(':scope > .k3-sp')) { btn._k3 = true; return btn; }   // already built (K3.keyInner, or copied HTML)
+    o = o || {};
+    var kind = o.kind || btn.getAttribute('data-k3') || '';
+    var n = o.n || +btn.getAttribute('data-k3-n') || KINDS[kind];
+    var main = o.main != null ? !!o.main : (kind === 'play' || btn.classList.contains('k3-main'));
+    btn.className += keyClass(kind, { n: n, main: main });
+    if (!btn.firstElementChild && !btn.textContent.trim() && ICONS[kind]) btn.innerHTML = kind === 'play' ? playPause() : ICONS[kind]();
+    var fc = doc.createElement('span');
+    fc.className = 'k3-fc';
+    while (btn.firstChild) fc.appendChild(btn.firstChild);
+    if (!fc.firstElementChild) {   // bare text ("+5", "🥶 קר מדי") gets a span for its 3D shadow; a signed number stays LTR
+      var t = fc.textContent.trim();
+      var tx = doc.createElement('span');
+      tx.className = 'k3-tx';
+      if (/^[+\-\u2212\u00b1]?\d/.test(t)) tx.dir = 'ltr';
+      tx.textContent = t;
+      fc.textContent = '';
+      fc.appendChild(tx);
+    }
+    var bb = doc.createElement('span');
+    bb.className = 'k3-bb';
+    bb.appendChild(fc);
+    if (main) bb.insertAdjacentHTML('beforeend', '<span class="k3-fc k3-bk" aria-hidden="true"></span><span class="k3-edge"></span>');
+    var sp = doc.createElement('span');
+    sp.className = 'k3-sp';
+    sp.appendChild(bb);
+    btn.appendChild(sp);
+    btn._k3 = true;
+    if (main) syncBack(btn);
+    return btn;
+  }
+  /** the same as wrap(), as strings, for HTML built as text (ride.bpm's k3c(id) + k3(inner, id); RideCheck's render()):
+   *  '<button class="mykey' + K3.keyClass('next') + '">' + K3.keyInner(K3.ICONS.next(), 'next') + '</button>' */
+  function keyClass(kind, o) {
+    o = o || {};
+    var n = o.n || KINDS[kind];
+    var main = o.main != null ? !!o.main : kind === 'play';
+    return ' k3' + (/^[\w-]+$/.test(kind || '') ? ' k3-' + kind : '') + (n ? ' k3-n' + n : '') + (main ? ' k3-main' : '');
+  }
+  function keyInner(inner, kind, o) {
+    o = o || {};
+    var main = o.main != null ? !!o.main : kind === 'play';
+    inner = inner == null || inner === '' ? (kind === 'play' ? playPause() : ICONS[kind] ? ICONS[kind]() : '') : String(inner);
+    if (!/</.test(inner)) inner = '<span class="k3-tx"' + (/^\s*[+\-\u2212\u00b1]?\d/.test(inner) ? ' dir="ltr"' : '') + '>' + inner + '</span>';
+    return '<span class="k3-sp"><span class="k3-bb"><span class="k3-fc">' + inner + '</span>' +
+      (main ? '<span class="k3-fc k3-bk" aria-hidden="true">' + inner.replace(/\sid="[^"]*"/g, '') + '</span><span class="k3-edge"></span>' : '') + '</span></span>';
+  }
+  /** the coin's back face = a copy of the front (without ids) */
+  function syncBack(btn) {
+    var fc = btn.querySelector('.k3-fc:not(.k3-bk)');
+    var bk = btn.querySelector('.k3-bk');
+    if (!fc || !bk) return;
+    bk.innerHTML = fc.innerHTML;
+    [].forEach.call(bk.querySelectorAll('[id]'), function (x) { x.removeAttribute('id'); });
+  }
+  /** wraps every [data-k3] / .k3 key under root that isn't wrapped yet (call it after writing new HTML) */
+  function wrapAll(r) {
+    [].forEach.call((r || doc).querySelectorAll('[data-k3], button.k3'), function (b) { wrap(b); });
+  }
+  /** a wrapped key's new content (writing the button's innerHTML would break its layers) */
+  function setFace(btn, html) {
+    var fc = btn && btn.querySelector('.k3-fc:not(.k3-bk)');
+    if (!fc) { if (btn) btn.innerHTML = html; return; }
+    fc.innerHTML = html;
+    syncBack(btn);
+  }
+  function setPlaying(el, on) { if (el) el.classList.toggle('k3-playing', !!on); }
+
+  /** writes el's HTML only when the string changed since the last write here — compared with that string (el._h), never
+   *  with el.innerHTML (the browser re-serializes SVG / attributes, so that comparison always differs and every refresh
+   *  rebuilds the element, cutting a turn, restarting the beat, replaying a flip). True when it wrote.
+   *  In the middle of a cube turn the face that turns in gets it, and the turn goes on (ride.bpm 0.9.4). It also keeps
+   *  what was there before (el._k3old) for the old call form K3.flip(el) / K3.flipKey(key, id, el) right after it. */
+  function setStatic(el, html) {
+    if (typeof el === 'string') el = doc.querySelector(el);
+    if (!el) return false;
+    el._k3old = el._h != null ? el._h : el.innerHTML;
+    if (el._h === html) return false;
+    el._h = html;
+    if (el._k3c && el._k3c.fn) { el._k3c.fn.innerHTML = html; el._k3c.fh = html; }
+    else el.innerHTML = html;
+    return true;
+  }
+
+  // ------------------------------------------------------------------ the touch spin / hop helper (ride.bpm 0.9.1 animOnce)
+  var SPIN = ['k3-su0', 'k3-su1', 'k3-sd0', 'k3-sd1', 'k3-sl0', 'k3-sl1', 'k3-sr0', 'k3-sr1'];
+  /** plays an animation class once on el: off and on again (reflow) so it restarts, and away at the end (a screen shown
+   *  again after display:none restarts the CSS animations of the classes it still has). group = the classes that replace
+   *  each other (default: just cls) */
+  function animOnce(el, cls, ms, group) {
+    if (!el || !cls) return;
+    group = group || [cls];
+    group.forEach(function (c) { el.classList.remove(c); });
+    void el.offsetWidth;
+    el.classList.add(cls);
+    var t = el._k3t || (el._k3t = {});   // one timer per group: a hop never cancels the end of a spin on the same key
+    clearTimeout(t[group[0]]);
+    t[group[0]] = setTimeout(function () { el.classList.remove(cls); }, ms || 750);
+  }
+
+  // ------------------------------------------------------------------ "כשמשהו משתנה — מתהפכים": the cube (ride.bpm 0.9.4)
+  // As in the approved mockup (54, frame י): the old content turns away and the new one turns in, both seen in the middle,
+  // like a turning prism. Up (a number that went up, ⏭, a later item): the old face goes up and the new one comes from
+  // below; down (⏮, an earlier item): the reverse. The box STAYS: for the turn it holds a cube of its own size (the
+  // perspective is on the box only while it turns), and after the turn its new content alone. A write during the turn
+  // (K3.setStatic, a label that arrives a moment later) goes to the face that turns in, and the turn goes on.
+  // Number: ½ s with a little overshoot, perspective 360 px; a row: 0.65 s, perspective 600 px — the mockup's values.
+  var CUBE = { num: { ms: 500, ease: 'cubic-bezier(.34,1.45,.6,1)', p: 360 }, row: { ms: 650, ease: 'cubic-bezier(.3,1.25,.55,1)', p: 600 } };
+  /** 'up' / 'down' from 'up', 'down', 'dn' or a number's sign; '' when it says neither */
+  function dirOf(d) { return d === 'up' || d > 0 ? 'up' : d === 'down' || d === 'dn' || d < 0 ? 'down' : ''; }
+  /** the way a number moved; '' when it didn't, or when one of the two isn't a number */
+  function numDir(was, now) {
+    var a = toNum(was), b = toNum(now);
+    return isFinite(a) && isFinite(b) && a !== b ? (b > a ? 'up' : 'down') : '';
+  }
+  /** ⏮ / ⏭ tell the next turn its way (ride.bpm S.navDir), for a change that arrives a moment later (the player reports
+   *  the new song): K3.nav('down') in ⏮'s handler, K3.nav('up') in ⏭'s. K3.navDir() = 'down' for 3 s after a 'down', else 'up'. */
+  function nav(d) { M.nav = { d: dirOf(d) || 'up', at: Date.now() }; }
+  function navDir() { return M.nav && M.nav.d === 'down' && Date.now() - M.nav.at < 3000 ? 'down' : 'up'; }
+  /** flip / flipKey / roll take a direction, or { dir, kind: 'row' | 'num', after(node) } */
+  function opts(o) { return o && typeof o === 'object' ? o : { dir: o }; }
+  function px(v) { return parseFloat(v) || 0; }
+  /** the box's content size in px (fractions kept), or null when it isn't laid out (display: none, a hidden screen).
+   *  + 0.01: the computed value is printed rounded and layout truncates it to 1/64 px — without it a face could come
+   *  out 1/64 px narrower than the box (and wrap a row that just fits) */
+  function boxSize(el) {
+    var cs = root.getComputedStyle(el), h = parseFloat(cs.height), w = parseFloat(cs.width);
+    if (cs.boxSizing === 'border-box') {
+      h -= px(cs.paddingTop) + px(cs.paddingBottom) + px(cs.borderTopWidth) + px(cs.borderBottomWidth);
+      w -= px(cs.paddingLeft) + px(cs.paddingRight) + px(cs.borderLeftWidth) + px(cs.borderRightWidth);
+    }
+    return h > 0 && w > 0 ? { h: h + .01, w: w + .01 } : null;
+  }
+  /** the box's own flex / grid layout, for the two faces: during the turn its children sit in a face, not in the box,
+   *  and must be laid out the same (a block box needs nothing; grid tracks come as the px they had before the turn) */
+  function faceLayout(cs) {
+    var d = cs.display, gap = 'gap:' + cs.rowGap + ' ' + cs.columnGap + ';';
+    if (/flex/.test(d)) {
+      return 'display:flex;flex-direction:' + cs.flexDirection + ';flex-wrap:' + cs.flexWrap + ';justify-content:' + cs.justifyContent +
+        ';align-items:' + cs.alignItems + ';align-content:' + cs.alignContent + ';' + gap;
+    }
+    if (/grid/.test(d)) {
+      return 'display:grid;grid-template-columns:' + cs.gridTemplateColumns + ';grid-template-rows:' + cs.gridTemplateRows +
+        ';grid-template-areas:' + cs.gridTemplateAreas + ';grid-auto-flow:' + cs.gridAutoFlow + ';grid-auto-columns:' + cs.gridAutoColumns +
+        ';grid-auto-rows:' + cs.gridAutoRows + ';justify-items:' + cs.justifyItems + ';align-items:' + cs.alignItems +
+        ';justify-content:' + cs.justifyContent + ';align-content:' + cs.alignContent + ';' + gap;
+    }
+    return '';
+  }
+  /** the end of a turn, or a plain swap: the newest content alone, and nothing of the cube left on the box. After a turn
+   *  the incoming face's own nodes move into the box (they are the newest content: every write during the turn went
+   *  there), so what the app did to them meanwhile stays — a listener, a canvas drawing, keys wrapped by K3.wrapAll */
+  function cubeEnd(el, after) {
+    var c = el._k3c;
+    el._k3c = null;
+    if (c) {
+      clearTimeout(c.t);
+      el.classList.remove('k3-cubing');
+      el.style.removeProperty('--k3-cp');
+      if (c.disp != null) el.style.display = c.disp;
+      if (!el.getAttribute('style')) el.removeAttribute('style');
+    }
+    if (c && c.cube && c.cube.parentNode !== el) {
+      // the app wrote into the box itself during the turn (innerHTML): its content wins
+    } else if (c && c.fn && c.fh === el._h) {
+      var frag = doc.createDocumentFragment();
+      while (c.fn.firstChild) frag.appendChild(c.fn.firstChild);
+      el.textContent = '';
+      el.appendChild(frag);
+    } else el.innerHTML = el._h;
+    if (after) after(el);
+  }
+  /** turns el to html (ride.bpm cubeTo). d = 'up' | 'down', kind = 'row' | 'num', from = the content that turns away
+   *  (default: what is seen now — in the middle of a turn, the face that was turning in), after(node) = called with the
+   *  incoming face at the start and with el at the end. False, with a plain swap, when it can't turn now. */
+  function cubeTo(el, html, d, kind, after, from) {
+    var c = el._k3c, k = CUBE[kind] || CUBE.row;
+    var old = from != null ? String(from) : c ? c.fn.innerHTML : el.innerHTML;
+    el._h = html;
+    if (!c) {
+      c = { disp: null };
+      if (flipOk() && root.getComputedStyle(el).display === 'inline') { c.disp = el.style.display; el.style.display = 'inline-block'; }   // a cube needs a box
+    }
+    clearTimeout(c.t);
+    el._k3c = c;
+    var sz = flipOk() ? boxSize(el) : null;
+    if (!sz) { cubeEnd(el, after); return false; }
+    if (c.lay == null) c.lay = faceLayout(root.getComputedStyle(el));   // read before the cube goes in (grid tracks are resolved values)
+    var h = sz.h, z = sz.h / 2, up = d !== 'down';   // layout px as measured (not rounded: the box keeps its size)
+    el.style.setProperty('--k3-cp', Math.max(k.p, Math.round(sz.h * 4.5)) + 'px');
+    el.classList.add('k3-cubing');
+    // the geometry is inline (an app rule like ".box > span { padding: 6px }" must not move the faces), and so is what
+    // would flatten the cube or paint a plate through its middle (opacity, filter, overflow, a background)
+    var reset = 'margin:0;padding:0;border:0;';
+    el.innerHTML = '<span class="k3-cube" style="' + reset + 'position:relative;display:block;flex:none;background:none;box-shadow:none;opacity:1;' +
+      'filter:none;overflow:visible;transform-style:preserve-3d;width:' + sz.w + 'px;height:' + h +
+      'px;--k3-cz:-' + z + 'px;animation:' + (up ? 'k3cubeU ' : 'k3cubeD ') + k.ms + 'ms ' + k.ease + ' both"><span class="k3-cf" aria-hidden="true" style="' +
+      reset + 'height:' + h + 'px;transform:translateZ(' + z + 'px)">' + old + '</span><span class="k3-cf k3-cfn" style="' + reset +
+      'position:absolute;left:0;top:0;height:' + h + 'px;transform:rotateX(' + (up ? -90 : 90) + 'deg) translateZ(' + z + 'px)">' + html + '</span></span>';
+    var cube = el.firstChild;
+    if (c.lay) { cube.firstChild.style.cssText += ';' + c.lay; cube.lastChild.style.cssText += ';' + c.lay; }
+    [].forEach.call(cube.firstChild.querySelectorAll('[id]'), function (x) { x.removeAttribute('id'); });   // the old face is a picture: no id twice
+    c.cube = cube;
+    c.fn = cube.lastChild;
+    c.fh = html;
+    c.t = setTimeout(function () { cubeEnd(el, after); }, k.ms + 40);
+    if (after) after(c.fn);
+    return true;
+  }
+  /** a write without a turn: like setStatic, + after(node) when it wrote. Mid-turn while motion just stopped: ends it now. */
+  function put(el, html, after) {
+    if (el._k3c && !flipOk()) { el._h = html; cubeEnd(el, after); return true; }
+    if (!setStatic(el, html)) return false;
+    if (after) after(el._k3c && el._k3c.fn ? el._k3c.fn : el);
+    return true;
+  }
+  /** K3.flip(el, html, o): turns el — a box that STAYS, not one a refresh rebuilds a moment later — to its new content
+   *  html, like a cube. o = 'up' | 'down' (default K3.navDir(): up unless ⏮ was just pressed), or { dir, kind: 'row'
+   *  (default) | 'num', after(node) }. Not allowed now (change = none, reduce motion, riding, app hidden): a plain swap.
+   *  True when it turns. Old form K3.flip(el), right after K3.setStatic(el, html): turns from what that write replaced. */
+  function flip(el, html, o) {
+    if (typeof el === 'string') el = doc.querySelector(el);
+    if (!el) return false;
+    o = opts(o);
+    var d = dirOf(o.dir) || navDir(), kind = o.kind === 'num' ? 'num' : 'row', after = typeof o.after === 'function' ? o.after : null;
+    if (html == null) {
+      var from = el._k3old;
+      el._k3old = el._h;   // used once
+      return el._h != null && from != null && flipOk() ? cubeTo(el, el._h, d, kind, after, from) : false;
+    }
+    html = String(html);
+    if (!flipOk()) { put(el, html, after); return false; }
+    return cubeTo(el, html, d, kind, after);
+  }
+  /** K3.flipKey(key, id, el, html, o): writes html into el, and turns it when the item shown under key changed (another
+   *  song, another day): not the first time, not to or from "nothing" (null, undefined, '', 0 — ride.bpm's 0 = no song),
+   *  not on a box the kit hasn't written yet (a screen built again). o as in K3.flip. True when it turned.
+   *  Old form K3.flipKey(key, id, el) — el already shows the new content: right after K3.setStatic(el, html) on a box that
+   *  stays, or an element just rebuilt from a string (then it turns from the HTML it had under key last time). */
+  function flipKey(key, id, el, html, o) {
+    if (typeof el === 'string') el = doc.querySelector(el);
+    var f = M.mem['f:' + key], turn = false, wasH = null;
+    var now = !el ? null : html != null ? String(html) : el._k3c || el._h != null ? el._h : el.innerHTML;
+    if (!f) M.mem['f:' + key] = { v: id, h: now };
+    else {
+      if (f.v !== id) { turn = !!(f.v && id); f.v = id; }
+      wasH = f.h;
+      f.h = now;
+    }
+    if (!el) return false;
+    if (html == null) {
+      if (!turn || !flipOk()) return false;
+      if (el._h != null && el._k3old != null) return flip(el, null, o);   // a box that stays, written by setStatic
+      if (wasH == null) return false;
+      o = opts(o);
+      return cubeTo(el, now, dirOf(o.dir) || navDir(), o.kind === 'num' ? 'num' : 'row', typeof o.after === 'function' ? o.after : null, wasH);
+    }
+    if (turn && el._h !== undefined && flipOk()) return flip(el, html, o);
+    put(el, now, opts(o).after);
+    return false;
+  }
+  /** K3.roll(el, text, o): writes a number (as text) into a box that stays and turns it like a cube — up when it went up,
+   *  down when it went down (o = 'up' / 'down' / { dir } to say it yourself). Only when the text changed; two values that
+   *  aren't numbers and no dir: a plain swap. The box gets .k3-roll (an LTR island: sign and symbol unit inside). */
+  function roll(el, text, o) {
+    if (typeof el === 'string') el = doc.querySelector(el);
+    if (!el) return false;
+    text = String(text);
+    o = opts(o);
+    var was = el._k3v != null ? el._k3v : el.textContent.trim();
+    el._k3v = text;
+    el.classList.add('k3-roll');
+    var html = esc(text), d = dirOf(o.dir) || numDir(was, text), after = typeof o.after === 'function' ? o.after : null;
+    if (was === text || !d || !flipOk()) { put(el, html, after); return false; }
+    return cubeTo(el, html, d, 'num', after);
+  }
+  /** K3.rollKey(key, value, el, html): for views rebuilt from strings — remembers a number's last value and HTML under
+   *  key; when the value changed, el (the new element that shows it) turns from the old HTML to its own content (or to
+   *  html, written here). Up when it went up; not the first time; numbers only. True when it turned. */
+  function rollKey(key, value, el, html) {
+    if (typeof el === 'string') el = doc.querySelector(el);
+    var now = html != null ? String(html) : !el ? '' : el._k3c ? el._h : el.innerHTML;
+    var m = rollMem(key, value, now);
+    if (!el) return false;
+    if (m && flipOk()) return cubeTo(el, now, m.d, 'num', null, m.h);
+    if (html != null) put(el, now);
+    return false;
+  }
+  /** remembers a number's value + HTML under key; { d, h: the HTML it had } when the number moved */
+  function rollMem(key, value, now) {
+    var f = M.mem['r:' + key], m = null;
+    if (!f) M.mem['r:' + key] = { v: value, h: now };
+    else {
+      if (f.v !== value) { var d = numDir(f.v, value); if (d) m = { d: d, h: f.h }; f.v = value; }
+      f.h = now;
+    }
+    return m;
+  }
+  /** every [data-k3-roll="key"] under root (its text = the value): turns the ones whose number changed since the last
+   *  call. Call it after writing the view. Skipped: the copies in a face that turns away; in a face that turns in (a row
+   *  refreshed in the middle of its turn) the number is only remembered — that turn already shows it. */
+  function rollAll(r) {
+    var n = 0;
+    [].forEach.call((r || doc).querySelectorAll('[data-k3-roll]'), function (el) {
+      if (el.closest('.k3-cf:not(.k3-cfn)')) return;
+      var key = el.getAttribute('data-k3-roll'), v = (el._k3c ? el._k3c.fn : el).textContent.trim();
+      if (el.closest('.k3-cfn')) rollMem(key, v, el._k3c ? el._h : el.innerHTML);
+      else if (rollKey(key, v, el)) n++;
+    });
+    return n;
+  }
+
+  // ------------------------------------------------------------------ "מדי פעם": every 20–30 s, on the keys on screen
+  function visibleKeys() {
+    var w = root.innerWidth, h = root.innerHeight;
+    return [].filter.call(doc.querySelectorAll('.k3'), function (k) {
+      var r = k.getBoundingClientRect();
+      return r.width > 0 && r.bottom > 0 && r.top < h && r.right > 0 && r.left < w;
+    });
+  }
+  function occSchedule() {
+    clearTimeout(M.occT);
+    M.occT = setTimeout(occRun, nextOccMs(Math.random()));
+  }
+  function occRun() {
+    M.occT = 0;
+    var s = M.s;
+    if (s.look !== '3d' || s.occ === 'none') return;
+    var seen = visibleKeys().length > 0 && (!M.opts.seen || M.opts.seen());
+    if (seen && allowed(state()) && Date.now() - M.touchAt > 5000) occPlay(s.occ);
+    occSchedule();
+  }
+  /** one occasional motion now: wave / coin / domino on all keys (a class on <html> for one run), hop on one visible key */
+  function occPlay(kind) {
+    var el = doc.documentElement;
+    if (kind === 'hop') {
+      var keys = visibleKeys();
+      var k = keys[Math.floor(Math.random() * keys.length)];
+      if (k) animOnce(k, 'k3-hop', 800, ['k3-hop']);
+      return k || null;
+    }
+    if (['wave', 'coin', 'domino'].indexOf(kind) < 0) return null;
+    var cls = 'mo-' + kind;
+    el.classList.remove(cls);
+    void el.offsetWidth;
+    el.classList.add(cls);
+    clearTimeout(M['t' + kind]);
+    M['t' + kind] = setTimeout(function () { el.classList.remove(cls); }, kind === 'coin' ? 1150 : 1500);
+    return el;
+  }
+
+  // ------------------------------------------------------------------ "כשנוגעים — מסתובב"
+  /** the face turns the way the key points: +5 up, −5 down, ⏮ left, ⏭ ⏯ (and any other key) right; data-k3-spin overrides */
+  function spin(btn) {
+    var sp = btn && btn.querySelector('.k3-sp');
+    if (!sp) return;
+    var dir = btn.getAttribute('data-k3-spin');
+    if (!dir) {
+      var kind = btn.getAttribute('data-k3') || ((btn.className.match(/\bk3-(p5|m5|prev|next|play)\b/) || [])[1]);
+      dir = kind === 'p5' ? 'up' : kind === 'm5' ? 'down' : kind === 'prev' ? 'left' : 'right';
+    }
+    var c = { up: 'su', down: 'sd', left: 'sl', right: 'sr' }[dir] || 'sr';
+    sp._k3n = 1 - (sp._k3n || 0);
+    animOnce(sp, 'k3-' + c + sp._k3n, 650, SPIN);
+  }
+
+  // ------------------------------------------------------------------ "עם הקצב": the beat driver
+  /** periodMs = one beat (0 / null = off). phaseMs = how far into a beat we are now. ride.bpm drives it from the playing
+   *  song (K3.beatTiming(bpm, posMs, firstBeatSec)); an app without music can give a fixed slow period, e.g. 1000. */
+  function beat(periodMs, phaseMs) {
+    M.beatP = periodMs > 0 ? +periodMs : 0;
+    M.beatT0 = Date.now() - (phaseMs || 0);
+    M.beatKey = '';
+    beatSync();
+  }
+  function beatSync() {
+    var el = doc.documentElement, s = M.s;
+    var want = M.beatP > 0 && s.look === '3d' && s.beat !== 'none' && allowed(state());
+    if (!want || Date.now() - M.touchAt < 2000) {   // under the finger: still (back on the beat after it lets go)
+      el.classList.remove('bt-on');
+      M.beatKey = '';
+      return;
+    }
+    var key = M.beatP.toFixed(1);
+    if (key !== M.beatKey) {
+      M.beatKey = key;
+      var phase = ((Date.now() - M.beatT0) % M.beatP + M.beatP) % M.beatP;
+      el.style.setProperty('--beat', M.beatP.toFixed(1) + 'ms');
+      el.style.setProperty('--bdel', (-phase).toFixed(0) + 'ms');
+      el.classList.remove('bt-on');
+      void el.offsetWidth;   // the beat animations start over, on the beat
+    }
+    el.classList.add('bt-on');
+  }
+
+  // ------------------------------------------------------------------ the settings panel "כפתורים ותנועה"
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  var NOTE = 'בנסיעה, במצב רכיבה ובפס מעל אפליקציית הניווט — הכפתורים לא זזים, כדי לא למשוך את העין.';
+  /** o = {title, labels: {key: label}, note, hide: ['beat']} — ride.bpm's rows, labels and order by default */
+  function panelHTML(o) {
+    o = o || {};
+    var s = M.s, flat = s.look === 'flat', L = o.labels || {};
+    var title = o.title != null ? o.title : 'כפתורים ותנועה';
+    return (title ? '<div class="k3-ph">' + esc(title) + '</div>' : '') + ROWS.filter(function (r) { return !(o.hide && o.hide.indexOf(r[0]) >= 0); }).map(function (r) {
+      var off = flat && r[0] !== 'look' && r[0] !== 'change';   // flat: no motion, except "when something changes"
+      var btns = r[2].map(function (x) {
+        return '<button type="button" class="' + (r[3] ? 'k3-chip' : '') + (s[r[0]] === x[0] ? ' on' : '') + '" data-k3-set="' + r[0] + '" data-v="' + x[0] + '"' +
+          (s[r[0]] === x[0] ? ' aria-pressed="true"' : ' aria-pressed="false"') + (off ? ' disabled' : '') + '>' + esc(x[1]) + '</button>';
+      }).join('');
+      return '<div class="k3-prow"><span class="k3-pl">' + esc(L[r[0]] || r[1]) + '</span><button type="button" class="k3-q" data-k3-help="' + r[0] + '" aria-label="הסבר">?</button></div>' +
+        (r[3] ? '<div class="k3-chips">' + btns + '</div>' : '<div class="k3-seg">' + btns + '</div>');
+    }).join('') + '<p class="k3-pnote">' + (flat ? 'בשטוח אין תנועות — רק "כשמשהו משתנה". ' : '') + esc(o.note != null ? o.note : NOTE) + '</p>';
+  }
+  /** draws the panel into el and handles its taps. o.onHelp(key, text) for a "?" (text from o.help = help-texts.he.json);
+   *  o.onChange(key, value, settings) after a change */
+  function panel(el, o) {
+    if (!el) return;
+    o = o || {};
+    el.classList.add('k3-panel');
+    el.innerHTML = panelHTML(o);
+    if (el._k3p) { el._k3p = o; return; }   // drawn again with new options; the listener is already there
+    el._k3p = o;
+    el.addEventListener('click', function (e) {
+      var po = el._k3p;
+      var h = e.target.closest && e.target.closest('[data-k3-help]');
+      if (h) { if (po.onHelp) po.onHelp(h.getAttribute('data-k3-help'), po.help ? po.help[h.getAttribute('data-k3-help')] : null); return; }
+      var b = e.target.closest && e.target.closest('[data-k3-set]');
+      if (!b || b.disabled) return;
+      var s = set(b.getAttribute('data-k3-set'), b.getAttribute('data-v'));
+      el.innerHTML = panelHTML(po);
+      if (po.onChange) po.onChange(b.getAttribute('data-k3-set'), b.getAttribute('data-v'), s);
+    });
+  }
+
+  // ------------------------------------------------------------------ init + listeners
+  function init(o) {
+    M.opts = o || {};
+    if (M.opts.storageKey) M.key = M.opts.storageKey;
+    M.s = clean(M.opts.settings || load() || DEFAULTS);
+    if (!M.on) {
+      M.on = true;
+      doc.addEventListener('pointerdown', function () {   // capture: before the app's own handlers
+        M.touchAt = Date.now();
+        var el = doc.documentElement;
+        if (el.classList.contains('bt-on')) {
+          el.classList.remove('bt-on');
+          M.beatKey = '';
+          clearTimeout(M.beatT);
+          M.beatT = setTimeout(function () { apply(); }, 2100);
+        }
+      }, true);
+      doc.addEventListener('click', function (e) {   // the press already showed (:active); the turn comes on release
+        var b = e.target.closest && e.target.closest('.k3');
+        var el = doc.documentElement;
+        if (b && el.classList.contains('mo-spin') && !el.classList.contains('still')) spin(b);
+      }, true);
+      doc.addEventListener('visibilitychange', function () { apply(); });
+      try { if (RMQ) RMQ.addEventListener('change', function () { apply(); }); } catch (e) { /* old WebView */ }
+    }
+    if (M.opts.wrap !== false) wrapAll(doc);
+    return apply();
+  }
+
+  root.K3 = {
+    VERSION: '1.1.0', DEFAULTS: DEFAULTS, OPTS: OPTS, ROWS: ROWS, KINDS: KINDS, ICONS: ICONS, CUBE: CUBE,
+    clean: clean, allowed: allowed, nextOccMs: nextOccMs, beatTiming: beatTiming, toNum: toNum,
+    init: init, apply: apply, get: get, set: set, load: load, save: save, state: state, setTheme: setTheme,
+    wrap: wrap, wrapAll: wrapAll, keyClass: keyClass, keyInner: keyInner, setFace: setFace, setPlaying: setPlaying, playPause: playPause,
+    setStatic: setStatic, animOnce: animOnce, flip: flip, flipKey: flipKey, roll: roll, rollKey: rollKey, rollAll: rollAll,
+    nav: nav, navDir: navDir, occPlay: occPlay, spin: spin, beat: beat, panelHTML: panelHTML, panel: panel
+  };
+})(typeof window !== 'undefined' ? window : this);
+
     // =========================================================================
     // הגדרות בסיסיות
     // =========================================================================
@@ -834,8 +1891,21 @@
       toast.className = 'toast show' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
       setTimeout(() => toast.classList.remove('show'), 3000);
     }
+    function escapeText(s) {
+      return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    }
+    // a plain write into a box the 3D kit may have turned before (the kit's lesson: reset what it remembers)
+    function writeText(el, text) {
+      el.textContent = text;
+      el._h = null;
+      el._k3v = null;
+    }
     function setStatus(text) {
-      document.getElementById('connection-status').textContent = text;
+      const el = document.getElementById('connection-status');
+      if (el.dataset.shown === text) return;
+      const first = el.dataset.shown === undefined;
+      el.dataset.shown = text;
+      if (!first && window.K3) K3.flip(el, escapeText(text), 'up'); else writeText(el, text);
     }
 
     // =========================================================================
@@ -846,8 +1916,8 @@
         return await navigator.mediaDevices.getUserMedia({
           audio: {
             echoCancellation: true,
-            noiseSuppression: enableBrowserFilters,
-            autoGainControl: enableBrowserFilters,
+            noiseSuppression: enableBrowserFilters && tune.ns,
+            autoGainControl: enableBrowserFilters && tune.agc,
             sampleRate: 48000,
             channelCount: 1
           },
@@ -872,9 +1942,22 @@
 
       destinationNode = audioContext.createMediaStreamDestination();
 
-      sourceNode.connect(gainNode);
+      // "רק תדרי דיבור": cut the rumble below speech and the clatter above it
+      let speechSource = sourceNode;
+      if (tune.band) {
+        const highpass = audioContext.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.value = 120;
+        const lowpass = audioContext.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = 5000;
+        sourceNode.connect(highpass);
+        highpass.connect(lowpass);
+        speechSource = lowpass;
+      }
+      speechSource.connect(gainNode);
       gainNode.connect(destinationNode);
-      sourceNode.connect(analyzerNode);
+      speechSource.connect(analyzerNode);
 
       outputStream = destinationNode.stream;
       startAudioLoop();
@@ -916,32 +1999,43 @@
         let shouldBeOpen = true;
         let extraStatus = '';
 
+        // The background noise (on the meter's 0-100 scale): follows the level down fast and up
+        // slowly, and even more slowly while it is loud (so speech hardly moves it).
+        const threshold = currentThreshold();
+        if (noiseFloor === null) noiseFloor = percent;
+        noiseFloor += (percent - noiseFloor) * (percent < noiseFloor ? 0.08 : percent > threshold ? 0.0008 : 0.004);
+        const loud = percent > threshold;
+        tuneLive.level = percent;
+        tuneLive.threshold = threshold;
+
         if (isMuted) {
           shouldBeOpen = false;
         } else if (filterMode === 'ptt') {
           shouldBeOpen = pttActive;
         } else if (filterMode === 'smart') {
-          if (avg > VAD_THRESHOLD) vadLastActiveTime = now;
-          shouldBeOpen = (now - vadLastActiveTime) < VAD_RELEASE_MS;
+          if (loud) vadLastActiveTime = now;
+          shouldBeOpen = (now - vadLastActiveTime) < tune.hold;
         } else if (filterMode === 'voice') {
           // מצב זיהוי קול - הכי מתוחכם
           if (!voiceFingerprint) {
             shouldBeOpen = false;
             extraStatus = 'צריך רישום';
-          } else if (avg < VAD_THRESHOLD) {
+          } else if (!loud) {
             // שקט - גם ככה לא צריך לחשב
-            shouldBeOpen = (now - voiceLastMatchTime) < VOICE_RELEASE_MS;
+            shouldBeOpen = (now - voiceLastMatchTime) < tune.hold;
           } else {
             // יש קול - בוא נבדוק אם הוא שלי
             const currentFeatures = extractVoiceFeatures(freqData, timeData);
             const similarity = compareFingerprints(voiceFingerprint, currentFeatures);
+            tuneLive.match = similarity;
+            tuneLive.matchAt = now;
 
-            if (similarity > VOICE_MATCH_THRESHOLD) {
+            if (similarity * 100 > tune.match) {
               voiceLastMatchTime = now;
               shouldBeOpen = true;
               extraStatus = `✓ זיהוי: ${(similarity * 100).toFixed(0)}%`;
             } else {
-              shouldBeOpen = (now - voiceLastMatchTime) < VOICE_RELEASE_MS;
+              shouldBeOpen = (now - voiceLastMatchTime) < tune.hold;
               extraStatus = `✗ לא מזוהה: ${(similarity * 100).toFixed(0)}%`;
             }
           }
@@ -954,6 +2048,9 @@
         }
 
         updateMyStatusUI(shouldBeOpen, percent, extraStatus);
+        // the keys move with the voice (settings: "תנועה · עם הקול")
+        voiceBeat((loud && shouldBeOpen) || !!document.querySelector('.participant.speaking'), now);
+        if (++tuneLive.ticks % 3 === 0) drawTuneMeters();
         if (driver === 'frame') requestAnimationFrame(loop);
       }
       loop();
@@ -1234,8 +2331,9 @@
 
       // עדכון UI
       document.getElementById('enroll-status').textContent =
-        `✓ נרשם בהצלחה! Pitch: ${voiceFingerprint.pitch.toFixed(1)}Hz, ${n} סמפלים`;
+        `✓ הקול שלך נרשם · ${n} דגימות`;
       document.getElementById('voice-enrolled-badge').style.display = 'flex';
+      renderTune();
 
       showToast('הקול שלך נרשם!', 'success');
 
@@ -1304,24 +2402,22 @@
 
       // אם עוברים למצב voice בלי טביעה - פותחים את מסך הרישום
       if (mode === 'voice' && !voiceFingerprint) {
-        document.getElementById('voice-enrollment').classList.add('visible');
+        const before = filterMode;
         filterMode = mode;
-        document.querySelectorAll('.filter-mode').forEach(btn => {
-          btn.classList.toggle('active', btn.dataset.mode === mode);
-        });
-        showToast('לחץ "רשם את הקול שלי" כדי להפעיל', 'info');
+        markMode(mode);
+        setTuneName(mode, before);
+        document.getElementById('ptt-row').classList.remove('visible');
+        renderTune();
+        showToast('לחץ "רשום את הקול שלי" כדי להפעיל', 'info');
         return;
       }
 
       const oldMode = filterMode;
       filterMode = mode;
 
-      document.querySelectorAll('.filter-mode').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.mode === mode);
-      });
-
-      // הצג/הסתר voice enrollment section
-      document.getElementById('voice-enrollment').classList.toggle('visible', mode === 'voice');
+      markMode(mode);
+      setTuneName(mode, oldMode);
+      renderTune();
 
       document.getElementById('ptt-row').classList.toggle('visible', mode === 'ptt');
       if (mode !== 'ptt') pttActive = false;
@@ -1335,6 +2431,14 @@
       }
 
       showToast('מצב: ' + getModeName(mode));
+    }
+
+    function markMode(mode) {
+      document.querySelectorAll('.filter-mode').forEach(btn => {
+        const on = btn.dataset.mode === mode;
+        btn.classList.toggle('active', on);
+        btn.classList.toggle('on', on);
+      });
     }
 
     function getModeName(mode) {
@@ -1363,21 +2467,28 @@
     // =========================================================================
     // Push To Talk
     // =========================================================================
+    function setPttText(text) {
+      const btn = document.getElementById('ptt-button');
+      if (window.K3 && btn.querySelector('.k3-fc')) K3.setFace(btn, '<span class="k3-tx">' + escapeText(text) + '</span>');
+      else btn.textContent = text;
+    }
     function setupPTT() {
       const btn = document.getElementById('ptt-button');
+      if (btn.dataset.bound) return;   // once - startRoom runs for every room
+      btn.dataset.bound = '1';
       const start = (e) => {
         if (filterMode !== 'ptt') return;
         e.preventDefault();
         pttActive = true;
         btn.classList.add('pressed');
-        btn.textContent = '🎙️ מדבר...';
+        setPttText('🎙️ מדבר...');
       };
       const end = (e) => {
         if (filterMode !== 'ptt') return;
         e.preventDefault();
         pttActive = false;
         btn.classList.remove('pressed');
-        btn.textContent = '🎙️ לחץ והחזק כדי לדבר';
+        setPttText('🎙️ לחץ והחזק כדי לדבר');
       };
       btn.addEventListener('touchstart', start, { passive: false });
       btn.addEventListener('touchend', end);
@@ -1398,6 +2509,41 @@
     // הסברים - כל כפתור "?" באפליקציה פותח אחד מהם
     // =========================================================================
     const HELP = {
+      'settings': { title: '⚙️ הגדרות', body: [
+        'כאן בוחרים איך הכפתורים נראים וזזים: תלת־ממד או שטוח, ותנועות לבחירה.',
+        'ליד כל שורה יש "?" עם הסבר.'] },
+      'tune': { title: '🎚️ כיוון אישי', body: [
+        'כאן מכוונים את הסינון לפי הקול שלך והרעש סביבך. ההגדרות נשמרות רק בטלפון שלך.',
+        'מה שמופיע כאן משתנה לפי המצב שבחרת למעלה.'] },
+      'threshold': { title: 'סף פתיחה', body: [
+        'הפס מראה כמה חזק המיקרופון שומע עכשיו. הקו הלבן הוא הסף: רק קול שעובר את הקו נשלח לחברים.',
+        'גוררים את הקו ימינה — צריך לדבר חזק יותר, ופחות רעש וקולות של אחרים עוברים. שמאלה — גם קול שקט עובר.',
+        'האזור המקווקו הוא הרעש סביבך. כדאי שהקו יהיה קצת מעליו.'] },
+      'auto': { title: 'סף אוטומטי', body: [
+        'הקו זז לבד: הוא עוקב אחרי הרעש סביבך ונשאר תמיד קצת מעליו (לפי "מרווח מעל הרעש").',
+        'טוב כשהרעש משתנה — מסעדה שמתמלאת, מוזיקה שמתחילה. גרירה של הקו מחזירה לסף ידני.'] },
+      'margin': { title: 'מרווח מעל הרעש', body: [
+        'בסף אוטומטי: כמה הקול שלך צריך להיות חזק מהרעש סביבך כדי לעבור.',
+        'הקול שלך קרוב למיקרופון ואנשים אחרים רחוקים — אז מרווח גדול יותר מעביר פחות קולות של אחרים. אבל אם תדבר בשקט, אולי לא תעבור.'] },
+      'hold': { title: 'זמן החזקה', body: [
+        'כמה זמן המיקרופון נשאר פתוח אחרי שהפסקת לדבר, כדי שסופי מילים לא ייחתכו.',
+        'קצר = פחות רעש בין משפטים. ארוך = דיבור רציף יותר.'] },
+      'match-now': { title: 'התאמה לקול שלך', body: [
+        'כשמישהו מדבר, האפליקציה בודקת כמה הקול דומה לקול שרשמת. הקו הוא הרף: מעליו — "זה אתה" והקול עובר לחברים.'] },
+      'match': { title: 'כמה קפדני הזיהוי', body: [
+        'גבוה = רק קול שדומה מאוד לשלך עובר: פחות קולות של אחרים, אבל לפעמים גם המילים שלך נחתכות.',
+        'נמוך = סלחני יותר.'] },
+      'ns': { title: 'סינון רעש של הטלפון', body: [
+        'הסינון המובנה של הטלפון מנקה רעש רקע קבוע (מזגן, המולה). פועל במצבים בסיסי וחכם.',
+        'כבוי — הקול טבעי יותר, אבל עם יותר רעש.'] },
+      'agc': { title: 'הגברה אוטומטית', body: [
+        'הטלפון מגביר לבד קול שקט ומנמיך קול חזק. פועל במצבים בסיסי וחכם.',
+        'כשהיא פועלת, בשקט גם הרעש מוגבר. אם הסף "קופץ" — נסה לכבות.'] },
+      'band': { title: 'רק תדרי דיבור', body: [
+        'מוריד מהקול שנשלח את התדרים שאין בהם דיבור: רעשים נמוכים (מזגן, רחש) וגבוהים (צלצול צלחות וכוסות).',
+        'הקול נשמע קצת "טלפוני", אבל נקי יותר.'] },
+      'reset': { title: 'חזרה לברירת המחדל', body: [
+        'מחזיר את כל ההגדרות בכרטיס הכיוון למה שהיה בהתחלה. טביעת הקול שרשמת נשארת.'] },
       'create': { title: 'צור חדר חדש', body: [
         'פותח חדר שיחה חדש ומציג קוד של 6 ספרות.',
         'שלח את הקוד לחברים שיושבים איתך. כל מי שמקליד אותו מצטרף לשיחה.',
@@ -1454,7 +2600,11 @@
     };
 
     function showHelp(key) {
-      const item = HELP[key];
+      let item = HELP[key];
+      if (!item && key.startsWith('k3-') && K3_HELP[key.slice(3)]) {
+        const k = K3_HELP[key.slice(3)];
+        item = { title: k.title, body: k.he.split('\n') };
+      }
       if (!item) return;
       document.getElementById('help-title').textContent = item.title;
       const body = document.getElementById('help-body');
@@ -1468,6 +2618,203 @@
     }
     function hideHelp() {
       document.getElementById('help-modal').classList.remove('visible');
+    }
+
+
+    // =========================================================================
+    // כיוון אישי - סף, החזקה, התאמת קול וסינונים. נשמר בטלפון בלבד.
+    // =========================================================================
+    const TUNE_KEY = 'silentchat.tune';
+    const TUNE_DEFAULTS = { threshold: 50, auto: false, margin: 12, hold: 300, match: 65, ns: true, agc: true, band: false };
+    // [step, min, max] for the − / + keys
+    const TUNE_STEPS = { margin: [2, 4, 40], hold: [100, 100, 2000], match: [5, 40, 90] };
+    const MODE_ORDER = ['off', 'basic', 'smart', 'voice', 'ptt'];
+    let tune = loadTune();
+    let noiseFloor = null;   // the background noise on the meter scale, measured while in a room
+    const tuneLive = { level: 0, threshold: 50, match: -1, matchAt: 0, ticks: 0 };
+
+    function cleanTune(t) {
+      const out = Object.assign({}, TUNE_DEFAULTS);
+      if (!t || typeof t !== 'object') return out;
+      const num = (v, min, max, d) => (typeof v === 'number' && isFinite(v) ? Math.min(max, Math.max(min, v)) : d);
+      out.threshold = num(t.threshold, 2, 98, out.threshold);
+      for (const k in TUNE_STEPS) out[k] = num(t[k], TUNE_STEPS[k][1], TUNE_STEPS[k][2], out[k]);
+      for (const k of ['auto', 'ns', 'agc', 'band']) if (typeof t[k] === 'boolean') out[k] = t[k];
+      return out;
+    }
+    function loadTune() {
+      try { return cleanTune(JSON.parse(localStorage.getItem(TUNE_KEY) || 'null')); } catch (e) { return cleanTune(null); }
+    }
+    function saveTune() {
+      try { localStorage.setItem(TUNE_KEY, JSON.stringify(tune)); } catch (e) { /* private mode */ }
+    }
+    function currentThreshold() {
+      return tune.auto ? Math.min(95, (noiseFloor === null ? 20 : noiseFloor) + tune.margin) : tune.threshold;
+    }
+    function tuneText(key, v) {
+      if (key === 'margin') return '+' + v;
+      if (key === 'hold') return (v / 1000).toFixed(1);
+      return v + '%';
+    }
+    function setTuneName(mode, oldMode) {
+      const el = document.getElementById('tune-mode-name');
+      const name = getModeName(mode);
+      if (el.dataset.v === name) return;
+      el.dataset.v = name;
+      const dir = MODE_ORDER.indexOf(mode) >= MODE_ORDER.indexOf(oldMode) ? 'up' : 'down';
+      if (oldMode && window.K3) K3.flip(el, escapeText(name), dir); else writeText(el, name);
+    }
+    const TUNE_NOTES = {
+      off: 'במצב כבוי הכל עובר כמו שהוא — אין סף. ב"מתקדם" אפשר להפעיל "רק תדרי דיבור".',
+      basic: 'במצב בסיסי אין סף — רק הסינון של הטלפון. ב"מתקדם" אפשר לכוון אותו.',
+      ptt: 'בלחץ ודבר אין סף — המיקרופון פתוח רק כשמחזיקים את הכפתור הגדול.'
+    };
+    function showEl(id, on) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = on ? '' : 'none';
+    }
+    function renderTune() {
+      const m = filterMode;
+      const gate = m === 'smart' || m === 'voice';
+      showEl('tune-voice', m === 'voice');
+      showEl('tune-gate', gate);
+      showEl('row-margin', gate && tune.auto);
+      showEl('row-ns', m === 'basic' || m === 'smart');
+      showEl('row-agc', m === 'basic' || m === 'smart');
+      const note = document.getElementById('tune-note');
+      note.textContent = TUNE_NOTES[m] || '';
+      showEl('tune-note', !gate);
+      document.querySelectorAll('#tune [data-tog]').forEach(b => {
+        const on = !!tune[b.dataset.tog];
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-checked', on ? 'true' : 'false');
+      });
+      document.querySelectorAll('#tune [data-tune]').forEach(s => {
+        const el = s.querySelector('.num');
+        const text = tuneText(s.dataset.tune, tune[s.dataset.tune]);
+        if (el.dataset.v !== text) { writeText(el, text); el.dataset.v = text; }
+      });
+      document.getElementById('enroll-btn').textContent = voiceFingerprint ? '🎤 רשום שוב' : '🎤 רשום את הקול שלי';
+      drawTuneMeters();
+    }
+    function drawTuneMeters() {
+      const room = document.getElementById('screen-room');
+      if (!room || room.classList.contains('hidden')) return;
+      const pct = v => Math.max(0, Math.min(100, v)) + '%';
+      document.getElementById('m-fill').style.width = 'calc(' + pct(tuneLive.level) + ' - 6px)';
+      document.getElementById('m-noise').style.width = pct(noiseFloor === null ? 0 : noiseFloor);
+      document.getElementById('m-line').style.left = pct(tuneLive.threshold || currentThreshold());
+      document.getElementById('tune-meter').setAttribute('aria-valuenow', Math.round(currentThreshold()));
+      if (filterMode !== 'voice') return;
+      const fresh = tuneLive.match >= 0 && Date.now() - tuneLive.matchAt < 700;
+      const read = document.getElementById('match-read');
+      document.getElementById('match-fill').style.width = fresh ? 'calc(' + pct(tuneLive.match * 100) + ' - 6px)' : '0';
+      document.getElementById('match-line').style.left = pct(tune.match);
+      if (!voiceFingerprint) { read.textContent = 'צריך לרשום קול'; read.className = 'match-read'; return; }
+      if (!fresh) { read.textContent = '—'; read.className = 'match-read'; return; }
+      const yes = tuneLive.match * 100 > tune.match;
+      read.textContent = Math.round(tuneLive.match * 100) + '% · ' + (yes ? 'זה אתה ✓' : 'לא אתה ✗');
+      read.className = 'match-read ' + (yes ? 'yes' : 'no');
+    }
+    function stepTune(key, dir) {
+      const [step, min, max] = TUNE_STEPS[key];
+      const v = Math.min(max, Math.max(min, tune[key] + dir * step));
+      if (v === tune[key]) return;
+      tune[key] = v;
+      saveTune();
+      const el = document.querySelector('#tune [data-tune="' + key + '"] .num');
+      el.dataset.v = tuneText(key, v);
+      if (window.K3) K3.roll(el, el.dataset.v, dir > 0 ? 'up' : 'down'); else writeText(el, el.dataset.v);
+      drawTuneMeters();
+    }
+    function microphoneFiltersOn() { return filterMode === 'basic' || filterMode === 'smart'; }
+    function toggleTune(key) {
+      tune[key] = !tune[key];
+      saveTune();
+      renderTune();
+      if (key === 'auto') showToast(tune.auto ? 'סף אוטומטי — הקו זז לבד לפי הרעש' : 'סף ידני — גוררים את הקו');
+      if ((key === 'ns' || key === 'agc' || key === 'band') && audioContext) reloadMicrophone(microphoneFiltersOn());
+    }
+    function resetTune() {
+      const before = tune;
+      tune = cleanTune(null);
+      saveTune();
+      renderTune();
+      showToast('הכיוון חזר לברירת המחדל');
+      if (audioContext && (before.ns !== tune.ns || before.agc !== tune.agc || before.band !== tune.band)) reloadMicrophone(microphoneFiltersOn());
+    }
+    (function bindTune() {
+      const card = document.getElementById('tune');
+      card.addEventListener('click', e => {
+        const step = e.target.closest('.k3-step > button');
+        if (step) { stepTune(step.parentElement.dataset.tune, +step.dataset.d); return; }
+        const tog = e.target.closest('[data-tog]');
+        if (tog) toggleTune(tog.dataset.tog);
+      });
+      // drag the line (or tap the meter) = a manual threshold
+      const meter = document.getElementById('tune-meter');
+      let dragging = false;
+      const setFrom = e => {
+        const r = meter.getBoundingClientRect();
+        const x = Math.max(0.03, Math.min(0.97, (e.clientX - r.left) / r.width));
+        tune.threshold = Math.round(x * 100);
+        if (tune.auto) { tune.auto = false; renderTune(); }
+        tuneLive.threshold = tune.threshold;
+        drawTuneMeters();
+      };
+      meter.addEventListener('pointerdown', e => { dragging = true; try { meter.setPointerCapture(e.pointerId); } catch (err) {} setFrom(e); });
+      meter.addEventListener('pointermove', e => { if (dragging) setFrom(e); });
+      const end = () => { if (dragging) { dragging = false; saveTune(); } };
+      meter.addEventListener('pointerup', end);
+      meter.addEventListener('pointercancel', end);
+    })();
+
+    // the keys move while someone speaks (settings: "תנועה · עם הקול")
+    const VOICE_BEAT_MS = 450;
+    let voiceBeatOn = false;
+    let lastTalkAt = 0;
+    let lastBeatSync = 0;
+    function voiceBeat(talking, now) {
+      if (!window.K3) return;
+      if (talking) lastTalkAt = now;
+      const want = talking || (now - lastTalkAt) < 500;
+      if (want !== voiceBeatOn) {
+        voiceBeatOn = want;
+        lastBeatSync = now;
+        K3.beat(want ? VOICE_BEAT_MS : 0);
+        return;
+      }
+      // a touch stops the beat for 2 s - pick it up again while someone is still speaking
+      if (want && now - lastBeatSync > 600 && !document.documentElement.classList.contains('bt-on')) {
+        lastBeatSync = now;
+        K3.apply();
+      }
+    }
+
+    // =========================================================================
+    // הגדרות: כפתורים ותנועה (ערכת k3)
+    // =========================================================================
+    const K3_HELP = {
+      look: { title: 'כפתורים: תלת־ממד / שטוח', he: 'תלת־ממד: הכפתורים בולטים כמו כפתורים אמיתיים, ונלחצים פנימה כשנוגעים. הצבעים — של האפליקציה.\nשטוח: כמו בגרסאות הקודמות. בשטוח אין תנועות (חוץ מ"כשמשהו משתנה").' },
+      occ: { title: 'מדי פעם', he: 'כל 20–30 שניות, כשהכפתורים על המסך, הם זזים לרגע: גל (מסתובבים קצת אחד אחרי השני), מטבע (הכפתור הראשי מסתובב סיבוב שלם), דומינו (נלחצים אחד אחרי השני), קפיצה (כפתור אחד קופץ).\nהכפתור עצמו לא זז מתחת לאצבע — רק הציור שלו. לא זז כמה שניות אחרי שנוגעים, וכשבטלפון מופעל "פחות תנועה".' },
+      shine: { title: 'אור חולף', he: 'פס אור שעובר על הכפתורים, כל 10 שניות / 30 שניות / דקה. אפשר יחד עם כל אחת מהתנועות האחרות.\nלא כשבטלפון מופעל "פחות תנועה".' },
+      beat: { title: 'עם הקול', he: 'הכפתורים זזים כשמישהו בחדר מדבר — אתה או החברים: קופצים בקצב, מטרונום (מתנדנדים), מתופף (כמו תופים). בשקט הם עוצרים.\nנעצר בזמן נגיעה. רק בתלת־ממד.' },
+      touch: { title: 'כשנוגעים בכפתור', he: 'נלחץ פנימה: כמו כפתור אמיתי (ברירת מחדל).\nמסתובב: אחרי הלחיצה הכפתור מסתובב סיבוב אחד. הלחיצה עצמה עובדת מיד, הסיבוב רק לעין.' },
+      change: { title: 'כשמשהו משתנה', he: 'מתהפכים (ברירת מחדל): מה שמשתנה מסתובב כמו קובייה — הישן יוצא והחדש נכנס: מצב החיבור, שם המצב בכרטיס הכיוון, ומספרים שמשנים ב־+ / −. מספר שעלה נכנס מלמטה, ושירד — מלמעלה.\nבלי: מתחלף מיד, בלי תנועה.' },
+      _note: { he: 'כשבטלפון מופעל "פחות תנועה", או כשהאפליקציה ברקע — הכפתורים לא זזים.' }
+    };
+    function openSettings() {
+      if (window.K3) {
+        K3.panel(document.getElementById('k3-panel'), {
+          title: '', help: K3_HELP, note: K3_HELP._note.he,
+          labels: { beat: 'תנועה · עם הקול', change: 'כשמשהו משתנה (מצב, מספרים)' },
+          onHelp: function (key) { showHelp('k3-' + key); }
+        });
+      }
+      document.getElementById('settings-modal').classList.add('visible');
+    }
+    function closeSettings() {
+      document.getElementById('settings-modal').classList.remove('visible');
     }
 
     // =========================================================================
@@ -1495,10 +2842,14 @@
           if (saved) {
             voiceFingerprint = JSON.parse(saved);
             document.getElementById('enroll-status').textContent =
-              `✓ טביעת קול שמורה - Pitch: ${voiceFingerprint.pitch.toFixed(1)}Hz`;
+              '✓ הקול שלך רשום';
             document.getElementById('voice-enrolled-badge').style.display = 'flex';
           }
         } catch (e) {}
+        noiseFloor = null;
+        markMode(filterMode);
+        setTuneName(filterMode, null);
+        renderTune();
 
         roomCode = code;
         showRoom();
@@ -1686,6 +3037,7 @@
       document.getElementById('mute-icon').textContent = isMuted ? '🔇' : '🎤';
       document.getElementById('mute-text').textContent = isMuted ? 'בטל השתקה' : 'השתק';
       document.getElementById('mute-btn').classList.toggle('active', isMuted);
+      document.getElementById('mute-btn').classList.toggle('on', isMuted);
     }
 
     function leaveRoom() {
@@ -1699,6 +3051,10 @@
       filterMode = 'basic';
       pttActive = false;
       isMuted = false;
+      markMode('basic');
+      document.getElementById('ptt-row').classList.remove('visible');
+      document.getElementById('mute-btn').classList.remove('active', 'on');
+      voiceBeat(false, 0);
       showHome();
     }
 
@@ -1764,6 +3120,10 @@
     if (isIOS() && !isStandalone()) showInstallButton();
 
     // Service worker - מאפשר התקנה ופתיחה מהירה גם בקליטה חלשה (רק באתר, לא בתוך ה-APK)
+    // 3D keys: 3D + "מתהפכים" by default, everything else off (settings: ⚙️ on the home screen)
+    if (window.K3) K3.init({ storageKey: 'silentchat.k3' });
+    renderTune();
+
     if ('serviceWorker' in navigator && !isNativeApp) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('sw.js').catch((err) => console.warn('SW registration failed:', err));

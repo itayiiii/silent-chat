@@ -17,11 +17,32 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // One fixed key for every test version, so a new version installs over the old one
+        // (no uninstalling). It is in the repository on purpose and is only for test versions:
+        // Google Play signs with its own key, and its upload key will be a private one.
+        test {
+            storeFile file('silentchat-test.p12')
+            storeType 'pkcs12'
+            storePassword 'silentchat-test'
+            keyAlias 'silentchat'
+            keyPassword 'silentchat-test'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.test
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.test
         }
+    }
+    lint {
+        // the release build should not stop on a lint warning
+        checkReleaseBuilds false
+        abortOnError false
     }
 }
 

@@ -54,24 +54,14 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/logs"
           { npm ci && npm run build:android; } 2>&1 | tee "$GITHUB_WORKSPACE/logs/web.log"
 
-      - name: Use the shared test signing key (only if the secret exists)
-        env:
-          KEYSTORE_B64: ${{ secrets.ANDROID_DEBUG_KEYSTORE_B64 }}
-        run: |
-          if [ -n "$KEYSTORE_B64" ]; then
-            mkdir -p ~/.android
-            printf '%s' "$KEYSTORE_B64" | base64 -d > ~/.android/debug.keystore
-            echo "Using the shared test key (updates install over the old version)"
-          else
-            echo "No shared key: testers must uninstall the old version before installing a new one"
-          fi
-
+      # A release build (not debuggable), signed with the fixed test key in mobile/android/app,
+      # so every new version installs over the old one.
       - name: Build the APK
         working-directory: mobile/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/logs/gradle.log"
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/silent-chat.apk"
+          ./gradlew assembleRelease --no-daemon --stacktrace 2>&1 | tee "$GITHUB_WORKSPACE/logs/gradle.log"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/silent-chat.apk"
 
       # Build logs are not readable from outside, so on failure the important lines
       # are shown as error notes on the run page.
@@ -101,4 +91,4 @@ jobs:
           gh release delete test-build --yes --cleanup-tag || true
           gh release create test-build silent-chat.apk --prerelease --target "$GITHUB_SHA" \
             --title "גרסת ניסיון ${VERSION_NAME}" \
-            --notes "קובץ התקנה לאנדרואיד (APK) לבודקים. נבנה אוטומטית מהקוד האחרון בענף main."
+            --notes "קובץ התקנה לאנדרואיד (APK) לבודקים. נבנה אוטומטית מהקוד האחרון בענף main. מגרסה 0.1.5 — מתקינים מעל הגרסה הקודמת, בלי להסיר."

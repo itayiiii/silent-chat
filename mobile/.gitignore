@@ -1,6 +1,7 @@
 node_modules/
 # built by scripts/build-web.mjs (obfuscated copy of ../index.html)
 www/
-# never commit signing keys
+# never commit real signing keys (Google Play / release).
+# android/app/silentchat-test.p12 is the public key for TEST versions, on purpose.
 *.keystore
 *.jks

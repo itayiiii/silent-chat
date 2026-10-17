@@ -11,7 +11,9 @@ on:
     # don't get a new build - which needs a reinstall - for nothing
     paths:
       - index.html
+      - ai-worker.js
       - icons/**
+      - lib/**
       - mobile/**
       - .github/workflows/android.yml
   workflow_dispatch:

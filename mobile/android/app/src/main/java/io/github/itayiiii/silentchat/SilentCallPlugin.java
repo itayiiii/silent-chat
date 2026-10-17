@@ -1,6 +1,7 @@
 package io.github.itayiiii.silentchat;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.os.Build;
 import androidx.core.content.ContextCompat;
@@ -15,6 +16,8 @@ import com.getcapacitor.annotation.PermissionCallback;
 /**
  * Lets the web page turn the "conversation active" service on and off.
  * From the page: Capacitor.nativePromise('SilentCall', 'start' | 'stop', {})
+ * Also sends an invitation: Capacitor.nativePromise('SilentCall', 'share', { text, title, app })
+ * (app: 'whatsapp' = straight into WhatsApp; otherwise / without WhatsApp = Android's share sheet)
  */
 @CapacitorPlugin(
     name = "SilentCall",
@@ -51,6 +54,31 @@ public class SilentCallPlugin extends Plugin {
     public void stop(PluginCall call) {
         stopService();
         call.resolve();
+    }
+
+    /** "שלח הזמנה בוואטסאפ" / "בדרך אחרת": the invitation with the room's link, into WhatsApp or the share sheet. */
+    @PluginMethod
+    public void share(PluginCall call) {
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("text/plain");
+        send.putExtra(Intent.EXTRA_TEXT, call.getString("text", ""));
+        if ("whatsapp".equals(call.getString("app"))) {
+            for (String pkg : new String[] { "com.whatsapp", "com.whatsapp.w4b" }) {   // WhatsApp, WhatsApp Business
+                try {
+                    getActivity().startActivity(new Intent(send).setPackage(pkg));
+                    call.resolve();
+                    return;
+                } catch (ActivityNotFoundException e) {
+                    // not installed: try the next one, then the share sheet
+                }
+            }
+        }
+        try {
+            getActivity().startActivity(Intent.createChooser(send, call.getString("title", "")));
+            call.resolve();
+        } catch (Exception e) {
+            call.reject("Could not open the share sheet: " + e.getMessage());
+        }
     }
 
     @Override

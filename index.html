@@ -9,6 +9,11 @@
   <meta name="apple-mobile-web-app-title" content="שיחה שקטה" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="description" content="דברו בבירור באוזניות גם בסביבה רועשת – כמו במסעדה" />
+  <!-- the preview WhatsApp shows for an invitation link -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="🎧 שיחה שקטה — הזמנה לשיחה" />
+  <meta property="og:description" content="לוחצים על הקישור ומצטרפים: שומעים את החברים באוזניות גם כשרועש מסביב" />
+  <meta property="og:image" content="https://itayiiii.github.io/silent-chat/icons/icon-512.png" />
   <link rel="manifest" href="manifest.json" />
   <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -848,7 +853,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     .join-key { width: 100%; max-width: 320px; height: 56px; }
     html:not(.b3d) .btn-primary.k3-main { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); color: #fff; }
 
-    /* ---- the five modes: bigger tiles, 3 + 2, left to right (off on the left) */
+    /* ---- the five modes: bigger tiles, 3 + 2, left to right (off on the left) — except זיהוי קולי, first: top right */
     .mode-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px 10px; padding-top: 6px; direction: ltr; }
     .mode-tile { position: relative; grid-column: span 2; direction: rtl; }
     .mode-tile.wide { grid-column: span 3; }
@@ -921,6 +926,94 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     .settings .set-sec { font-size: 15px; font-weight: 700; margin: 6px 0 2px; }
     .settings .k3-q { width: 30px; height: 30px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.2); color: var(--text-dim); }
     .modal.settings { max-height: 92vh; }
+
+    /* ---- voice recognition: 4 engines (⚡ / 📊 / 🧠 / 🛡️) and the one-time download of the AI */
+    .eng-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; direction: ltr; }
+    .eng { direction: rtl; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 9px 6px; border-radius: 12px;
+      background: var(--k3-surface); border: 1px solid var(--k3-line); color: var(--text); font-family: inherit; cursor: pointer; }
+    .eng b { font-size: 14px; }
+    .eng span { font-size: 11.5px; color: var(--text-dim); }
+    .eng.on { background: var(--accent-2); color: #1b0f3a; border-color: var(--accent-2); --k3-edge: var(--accent-2); }
+    .eng.on span { color: #2c1a5c; }
+    .eng-note { font-size: 12px; line-height: 1.5; color: var(--text-dim); background: rgba(167, 139, 250, .08);
+      border: 1px solid rgba(167, 139, 250, .25); border-radius: 10px; padding: 8px 10px; }
+    .eng-note b { color: var(--text); font-weight: 600; }
+    .ai-box { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 12px; background: rgba(167, 139, 250, .06);
+      border: 1px dashed rgba(167, 139, 250, .45); }
+    .ai-box[hidden], .ai-bar[hidden], .ai-box .k3-pill[hidden] { display: none; }
+    .ai-line { display: flex; align-items: center; gap: 8px; }
+    .ai-bar { height: 8px; border-radius: 6px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+    .ai-bar > i { display: block; height: 100%; width: 0; border-radius: 6px; background: var(--accent-2); transition: width .2s; }
+
+    /* ---- joining safely: the room's secret key inside a QR code / an invite link (no numbers to guess) */
+    .join-screen { justify-content: flex-start; padding-top: 70px; gap: 12px; }
+    .join-screen .title { margin-bottom: 0; }
+    .join-sub { margin-top: -4px; font-size: 14.5px; }
+    .scan-box { position: relative; width: 100%; max-width: 320px; aspect-ratio: 1 / 1; margin: 4px auto 0; border-radius: 24px; overflow: hidden;
+      background: #000; border: 1px solid var(--border); box-shadow: 0 20px 44px -20px rgba(0, 0, 0, .9); flex: none; }
+    .scan-box video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .scan-frame { position: absolute; inset: 13%; pointer-events: none; }
+    .scan-frame i { position: absolute; width: 38px; height: 38px; border: 0 solid var(--accent); }
+    .scan-frame i:nth-child(1) { top: 0; left: 0; border-top-width: 4px; border-left-width: 4px; border-top-left-radius: 14px; }
+    .scan-frame i:nth-child(2) { top: 0; right: 0; border-top-width: 4px; border-right-width: 4px; border-top-right-radius: 14px; }
+    .scan-frame i:nth-child(3) { bottom: 0; left: 0; border-bottom-width: 4px; border-left-width: 4px; border-bottom-left-radius: 14px; }
+    .scan-frame i:nth-child(4) { bottom: 0; right: 0; border-bottom-width: 4px; border-right-width: 4px; border-bottom-right-radius: 14px; }
+    .scan-line { position: absolute; left: 15%; right: 15%; top: 15%; height: 2px; border-radius: 2px; pointer-events: none;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent); box-shadow: 0 0 12px var(--accent);
+      animation: scanLine 2.4s ease-in-out infinite alternate; }
+    @keyframes scanLine { to { top: 85%; } }
+    .scan-box.found .scan-frame i { border-color: var(--success); }
+    .scan-box.found .scan-line, .scan-box.off .scan-line { display: none; }
+    .scan-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+      padding: 26px; text-align: center; font-size: 14px; line-height: 1.55; color: var(--text); background: rgba(10, 14, 26, .86); }
+    .scan-msg[hidden] { display: none; }
+    .scan-state { min-height: 22px; font-size: 14px; color: var(--text-dim); }
+    .scan-state.ok { color: var(--success); font-weight: 700; }
+    .scan-state.bad { color: var(--warning); }
+    .paste-box { width: 100%; max-width: 360px; margin-top: auto; padding-top: 14px; border-top: 1px solid var(--border);
+      display: flex; flex-direction: column; gap: 8px; }
+    .paste-label { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--text-dim); }
+    .paste-line { display: flex; gap: 8px; }
+    .link-input { flex: 1; min-width: 0; height: 48px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text); font-family: inherit; font-size: 14px; outline: none; direction: ltr; text-align: left; }
+    .link-input:placeholder-shown { direction: rtl; text-align: right; }
+    .link-input:focus { border-color: var(--accent); }
+    .paste-key { flex: none; height: 48px; padding: 0 18px; border-radius: 12px; font-size: 15px; font-weight: 700; }
+
+    /* the room header: invite friends (anyone in the room can show the code) · 🔒 when the room is locked */
+    .invite-btn { height: 40px; font-size: 14px; font-weight: 700; color: var(--accent); }
+    .room-lock { font-size: 16px; }
+    .room-lock[hidden] { display: none; }
+
+    /* the invite sheet: QR code, send a link, lock the room */
+    .modal.invite { text-align: center; max-height: 94vh; padding: 20px 20px 18px; }
+    .invite-head { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 14px; }
+    .invite-head h3 { margin: 0; }
+    .qr-card { position: relative; width: 232px; height: 232px; margin: 0 auto; padding: 10px; border-radius: 20px; background: #fff;
+      box-shadow: 0 0 0 6px rgba(244, 162, 97, .22), 0 16px 40px -16px rgba(0, 0, 0, .8); }
+    .qr-card svg { display: block; width: 100%; height: 100%; }
+    .qr-card .qr-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px;
+      color: #475569; font-size: 14px; }
+    .qr-card .qr-wait[hidden] { display: none; }
+    .qr-card .qr-locked { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+      gap: 6px; border-radius: 20px; background: rgba(255, 255, 255, .94); color: #0f172a; font-size: 15px; font-weight: 700; }
+    .qr-card .qr-locked span { font-size: 40px; }
+    .qr-card.locked .qr-locked { display: flex; }
+    .invite-note { margin: 14px 0 12px; font-size: 13.5px; line-height: 1.55; color: var(--text-dim); text-wrap: balance; }
+    .invite-note b { color: var(--text); }
+    .invite .wa-key { height: 52px; padding: 0 16px; font-size: 16px; font-weight: 700; color: #fff; background: #25d366;
+      --k3-edge: #1da851; box-shadow: 0 10px 26px -12px rgba(37, 211, 102, .6); }
+    .invite .share-key { height: 42px; padding: 0 14px; font-size: 14px; }
+    .invite .share-more { margin-top: 8px; }
+    .invite .tune-row { text-align: start; margin-top: 10px; }
+    .invite .tune-row[hidden] { display: none; }
+    .invite-safe { margin: 10px 0 14px; padding: 8px 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; color: var(--text-dim);
+      background: rgba(16, 185, 129, .08); border: 1px solid rgba(16, 185, 129, .28); text-wrap: balance; }
+    .invite .close-key { width: 100%; height: 50px; padding: 0; }
+
+    /* opened from an invite link */
+    .invited-screen { justify-content: center; align-items: center; text-align: center; gap: 6px; }
+    .invited-screen .join-key { margin-top: 26px; }
   </style>
 </head>
 <body>
@@ -955,19 +1048,39 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
   </div>
 
   <div id="screen-join" class="screen join-screen hidden">
-    <button class="back-btn" onclick="showHome()">×</button>
-    <div class="logo">🔗</div>
-    <h2 class="title title-row" style="font-size: 24px;">הזן קוד חדר <button class="help-btn" onclick="showHelp('code-input')" aria-label="הסבר">?</button></h2>
-    <p class="subtitle">קבלת הקוד ממי שיצר את החדר</p>
-    <input type="text" id="room-code-input" class="code-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]*" />
-    <button class="btn btn-primary k3 k3-main join-key" onclick="joinRoom()">הצטרף</button>
+    <button class="back-btn" onclick="showHome()" aria-label="חזרה">×</button>
+    <h2 class="title title-row" style="font-size: 24px;">📷 סרוק את הקוד <button class="help-btn" onclick="showHelp('scan')" aria-label="הסבר">?</button></h2>
+    <p class="subtitle join-sub">מי שפתח את החדר לוחץ "הזמן חברים" — ומכוונים את המצלמה לקוד שעל המסך שלו</p>
+    <div class="scan-box" id="scan-box">
+      <video id="scan-video" playsinline muted autoplay></video>
+      <div class="scan-frame"><i></i><i></i><i></i><i></i></div>
+      <div class="scan-line"></div>
+      <div class="scan-msg" id="scan-msg" hidden></div>
+    </div>
+    <div class="scan-state" id="scan-state"></div>
+    <div class="paste-box">
+      <div class="paste-label">קיבלת קישור בהודעה? אפשר להדביק אותו כאן <button class="help-btn sm" onclick="showHelp('paste')" aria-label="הסבר">?</button></div>
+      <div class="paste-line">
+        <input type="text" id="join-link-input" class="link-input" placeholder="הדבק כאן את הקישור" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" />
+        <button class="btn btn-primary k3-raise paste-key" onclick="joinFromInput()">הצטרף</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-invited" class="screen invited-screen hidden">
+    <button class="back-btn" onclick="showHome()" aria-label="חזרה">×</button>
+    <div class="logo">🎧</div>
+    <h2 class="title title-row" style="font-size: 26px;">הוזמנת לשיחה <button class="help-btn" onclick="showHelp('invited')" aria-label="הסבר">?</button></h2>
+    <p class="subtitle">חבר שלח לך קישור לחדר שלו. לוחצים "הצטרף עכשיו" — ומדברים באוזניות.</p>
+    <button class="btn btn-primary k3 k3-main join-key" onclick="acceptInvite()">הצטרף עכשיו</button>
   </div>
 
   <div id="screen-room" class="screen room hidden">
     <div class="room-header">
-      <div>
-        <div class="room-code-label">קוד החדר <button class="help-btn sm" onclick="showHelp('room-code')" aria-label="הסבר">?</button></div>
-        <div class="room-code" id="current-room-code">------</div>
+      <div class="with-help" style="gap: 8px;">
+        <button class="k3-pill k3-raise invite-btn" onclick="openInvite()">📷 הזמן חברים</button>
+        <button class="help-btn sm" onclick="showHelp('invite')" aria-label="הסבר">?</button>
+        <span class="room-lock" id="room-lock" hidden title="החדר נעול">🔒</span>
       </div>
       <div class="with-help" style="gap: 8px;">
         <div class="room-status">
@@ -992,14 +1105,14 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
           <button class="filter-mode k3 active on" data-mode="basic" data-k3-n="2" onclick="setFilterMode('basic')"><span class="icon">🎵</span><span class="name">בסיסי</span><span class="hint">מוריד רעש רקע</span></button>
           <button class="mode-help" onclick="showHelp('mode-basic')" aria-label="הסבר">?</button>
         </div>
-        <div class="mode-tile">
-          <button class="filter-mode k3" data-mode="smart" data-k3-n="3" onclick="setFilterMode('smart')"><span class="icon">🎯</span><span class="name">חכם</span><span class="hint">רק כשאתה מדבר</span></button>
-          <button class="mode-help" onclick="showHelp('mode-smart')" aria-label="הסבר">?</button>
-        </div>
-        <div class="mode-tile wide voice">
-          <button class="filter-mode voice-mode k3" data-mode="voice" data-k3-n="4" onclick="setFilterMode('voice')"><span class="icon">🧬</span><span class="name">זיהוי קולי</span><span class="hint">רק הקול שלך</span></button>
+        <div class="mode-tile voice">
+          <button class="filter-mode voice-mode k3" data-mode="voice" data-k3-n="3" onclick="setFilterMode('voice')"><span class="icon">🧬</span><span class="name">זיהוי קולי</span><span class="hint">רק הקול שלך</span></button>
           <button class="mode-help" onclick="showHelp('mode-voice')" aria-label="הסבר">?</button>
           <span id="voice-enrolled-badge" class="badge" style="display:none;">✓</span>
+        </div>
+        <div class="mode-tile wide">
+          <button class="filter-mode k3" data-mode="smart" data-k3-n="4" onclick="setFilterMode('smart')"><span class="icon">🎯</span><span class="name">חכם</span><span class="hint">רק כשאתה מדבר</span></button>
+          <button class="mode-help" onclick="showHelp('mode-smart')" aria-label="הסבר">?</button>
         </div>
         <div class="mode-tile wide">
           <button class="filter-mode k3" data-mode="ptt" data-k3-n="5" onclick="setFilterMode('ptt')"><span class="icon">🎙️</span><span class="name">לחץ ודבר</span><span class="hint">מדברים רק כשלוחצים</span></button>
@@ -1020,6 +1133,24 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         <div class="tune-note" id="tune-note"></div>
 
         <div id="tune-voice">
+          <div class="tune-row col" id="engine-row">
+            <div class="tune-line"><span class="tune-label">מנגנון זיהוי<small>איך האפליקציה מחליטה שזה הקול שלך</small></span><button class="help-btn sm" onclick="showHelp('engine')" aria-label="הסבר">?</button></div>
+            <div class="eng-grid">
+              <button class="eng k3-raise" type="button" data-engine="fp"><b>⚡ טביעת קול</b><span>מהיר · הכי פשוט</span></button>
+              <button class="eng k3-raise" type="button" data-engine="mfcc"><b>📊 מודל קול</b><span>MFCC · קלאסי</span></button>
+              <button class="eng k3-raise" type="button" data-engine="ai"><b>🧠 בינה מלאכותית</b><span>הכי מדויק</span></button>
+              <button class="eng k3-raise" type="button" data-engine="mix"><b>🛡️ שילוב</b><span>מודל קול + בינה</span></button>
+            </div>
+            <div class="eng-note" id="eng-note"></div>
+            <div class="ai-box" id="ai-box" hidden>
+              <div class="ai-line">
+                <span class="tune-label"><span id="ai-status"></span><small id="ai-sub"></small></span>
+                <button class="k3-pill k3-raise" id="ai-btn" type="button" onclick="aiButton()"></button>
+                <button class="help-btn sm" onclick="showHelp('ai-download')" aria-label="הסבר">?</button>
+              </div>
+              <div class="ai-bar" id="ai-bar" hidden><i id="ai-fill"></i></div>
+            </div>
+          </div>
           <div class="tune-row">
             <span class="tune-label"><span id="enroll-status">לא נרשם עדיין</span><small>נשמר רק בטלפון שלך</small></span>
             <button class="k3-pill k3-raise" id="enroll-btn" onclick="startEnrollment()">🎤 רשום את הקול שלי</button>
@@ -1188,6 +1319,33 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       <div class="set-sec">🎨 כפתורים ותנועה</div>
       <div id="k3-panel"></div>
       <button class="btn btn-secondary k3-raise" style="width: 100%; margin-top: 14px;" onclick="closeSettings()">סגור</button>
+    </div>
+  </div>
+
+  <!-- הזמנת חברים: קוד QR עם המפתח הסודי של החדר, שליחת קישור, נעילה -->
+  <div id="invite-modal" class="modal-backdrop" onclick="closeInvite()">
+    <div class="modal invite" onclick="event.stopPropagation()">
+      <div class="invite-head"><h3>📷 הזמנת חברים</h3><button class="help-btn sm" onclick="showHelp('invite')" aria-label="הסבר">?</button></div>
+      <div class="qr-card" id="qr-card">
+        <div class="qr-wait">מכין קוד...</div>
+        <div class="qr-locked"><span>🔒</span>החדר נעול</div>
+      </div>
+      <p class="invite-note">החברים לוחצים <b>"הצטרף לחדר"</b> ומכוונים את המצלמה לקוד.<br />אפשר גם עם המצלמה הרגילה של הטלפון.</p>
+      <div class="with-help">
+        <button class="btn k3-raise wa-key" onclick="shareWhatsApp()">💬 שלח הזמנה בוואטסאפ</button>
+        <button class="help-btn" onclick="showHelp('whatsapp')" aria-label="הסבר">?</button>
+      </div>
+      <div class="with-help share-more">
+        <button class="btn btn-secondary k3-raise share-key" onclick="shareInvite()">📤 בדרך אחרת (SMS, מייל...)</button>
+        <button class="help-btn" onclick="showHelp('share')" aria-label="הסבר">?</button>
+      </div>
+      <div class="tune-row" id="lock-row" hidden>
+        <span class="tune-label"><span id="lock-text">🔓 החדר פתוח</span><small id="lock-sub">מי שסורק את הקוד או מקבל את הקישור — נכנס</small></span>
+        <button type="button" class="k3-tog k3-groove" id="lock-tog" role="switch" aria-checked="false" aria-label="נעל את החדר" onclick="toggleLock()"></button>
+        <button class="help-btn sm" onclick="showHelp('lock')" aria-label="הסבר">?</button>
+      </div>
+      <div class="invite-safe">🛡️ בתוך הקוד יש מפתח סודי ואקראי של 16 תווים — אי אפשר לנחש אותו או "להריץ מספרים"</div>
+      <button class="btn btn-primary k3-raise close-key" onclick="closeInvite()">סגור</button>
     </div>
   </div>
 
@@ -1862,28 +2020,414 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     let enrollmentCtx = null;
 
     // =========================================================================
+    // זיהוי קולי: 4 מנגנונים לבחירה (בכרטיס הכיוון). רישום אחד של 5 שניות מלמד את כולם.
+    //   ⚡ fp   - טביעת קול: גובה הצליל + "צבע" הקול (הקוד הישן למעלה). מיידי.
+    //   📊 mfcc - מודל קול: MFCC + תערובת גאוסיאנים (הדרך הקלאסית לזיהוי דוברים). מחליט תוך ~0.2 שנ׳.
+    //   🧠 ai   - בינה מלאכותית: CAM++ ב-Web Worker (ai-worker.js), בודק כל משפט. הורדה חד-פעמית (~44MB).
+    //   🛡️ mix  - שילוב: מודל הקול פותח מיד, והבינה מאשרת או סוגרת אחרי ~חצי שנייה. ברירת המחדל.
+    // =========================================================================
+    // Silent Chat — "📊 מודל קול": MFCC (the classic speaker-recognition features) + a small Gaussian mixture
+    // model of your voice, trained from the 5-second registration. Runs on the main thread from the analyser's spectrum.
+    var MFCC = (function () {
+      var NMEL = 26, NCEP = 12, LO = 100, HI = 5000, K = 6;
+      var bank = null, bankKey = '';
+      function melOf(f) { return 1127 * Math.log(1 + f / 700); }
+      function makeBank(nBins, binHz) {
+        var lo = melOf(LO), hi = melOf(HI), d = (hi - lo) / (NMEL + 1), out = [];
+        for (var m = 0; m < NMEL; m++) {
+          var l = lo + m * d, c = lo + (m + 1) * d, r = lo + (m + 2) * d, first = -1, w = [];
+          for (var k = 1; k < nBins; k++) {
+            var mel = melOf(k * binHz), v = 0;
+            if (mel > l && mel < r) v = mel <= c ? (mel - l) / (c - l) : (r - mel) / (r - c);
+            if (v > 0) { if (first < 0) first = k; w.push(v); } else if (first >= 0) break;
+          }
+          out.push({ first: first, w: w });
+        }
+        return out;
+      }
+      var dct = [];
+      for (var j = 1; j <= NCEP; j++) {
+        var row = new Float64Array(NMEL);
+        for (var m2 = 0; m2 < NMEL; m2++) row[m2] = Math.cos(Math.PI * j * (m2 + 0.5) / NMEL);
+        dct.push(row);
+      }
+      var logE = new Float64Array(NMEL);
+      /** one frame: the analyser's dB spectrum (getFloatFrequencyData) → 12 cepstral numbers (c0 / loudness left out) */
+      function frame(db, binHz) {
+        var key = db.length + ':' + binHz;
+        if (key !== bankKey) { bank = makeBank(db.length, binHz); bankKey = key; }
+        for (var m = 0; m < NMEL; m++) {
+          var b = bank[m], e = 0;
+          for (var i = 0; i < b.w.length; i++) { var v = db[b.first + i]; if (v > -200) e += b.w[i] * Math.pow(10, v / 10); }
+          logE[m] = Math.log(Math.max(e, 1e-20));
+        }
+        var out = new Float64Array(NCEP);
+        for (var c = 0; c < NCEP; c++) { var s = 0, r2 = dct[c]; for (var q = 0; q < NMEL; q++) s += r2[q] * logE[q]; out[c] = s; }
+        return out;
+      }
+
+      // ------------------------------------------------ a small diagonal Gaussian mixture (k-means start + EM)
+      function logpdf(model, x) {
+        var best = -Infinity, terms = [];
+        for (var k = 0; k < model.k; k++) {
+          var t = model.lw[k], mu = model.mu[k], vr = model.var[k];
+          for (var d = 0; d < NCEP; d++) { var z = x[d] - mu[d]; t -= 0.5 * (z * z / vr[d] + Math.log(2 * Math.PI * vr[d])); }
+          terms.push(t); if (t > best) best = t;
+        }
+        var s = 0;
+        for (var i = 0; i < terms.length; i++) s += Math.exp(terms[i] - best);
+        return best + Math.log(s);
+      }
+      function train(frames) {
+        var n = frames.length, k = Math.min(K, Math.max(1, Math.floor(n / 25)));
+        var gm = new Float64Array(NCEP), gv = new Float64Array(NCEP), d, i, c;
+        for (i = 0; i < n; i++) for (d = 0; d < NCEP; d++) gm[d] += frames[i][d] / n;
+        for (i = 0; i < n; i++) for (d = 0; d < NCEP; d++) gv[d] += Math.pow(frames[i][d] - gm[d], 2) / n;
+        // k-means start: frames spread evenly through the recording
+        var mu = [];
+        for (c = 0; c < k; c++) mu.push(Float64Array.from(frames[Math.floor((c + 0.5) * n / k)]));
+        var vr = [], w = [];
+        for (c = 0; c < k; c++) { vr.push(Float64Array.from(gv)); w.push(1 / k); }
+        var model = { k: k, mu: mu, var: vr, lw: w.map(Math.log) };
+        for (var it = 0; it < 12; it++) {                     // EM
+          var R = [], Nk = new Float64Array(k);
+          for (i = 0; i < n; i++) {
+            var ts = [], best = -Infinity;
+            for (c = 0; c < k; c++) {
+              var t = model.lw[c];
+              for (d = 0; d < NCEP; d++) { var z = frames[i][d] - model.mu[c][d]; t -= 0.5 * (z * z / model.var[c][d] + Math.log(2 * Math.PI * model.var[c][d])); }
+              ts.push(t); if (t > best) best = t;
+            }
+            var s = 0; for (c = 0; c < k; c++) { ts[c] = Math.exp(ts[c] - best); s += ts[c]; }
+            for (c = 0; c < k; c++) { ts[c] /= s; Nk[c] += ts[c]; }
+            R.push(ts);
+          }
+          for (c = 0; c < k; c++) {
+            var nk = Math.max(Nk[c], 1e-6), m2 = new Float64Array(NCEP), v2 = new Float64Array(NCEP);
+            for (i = 0; i < n; i++) for (d = 0; d < NCEP; d++) m2[d] += R[i][c] * frames[i][d] / nk;
+            for (i = 0; i < n; i++) for (d = 0; d < NCEP; d++) v2[d] += R[i][c] * Math.pow(frames[i][d] - m2[d], 2) / nk;
+            for (d = 0; d < NCEP; d++) v2[d] = Math.max(v2[d], 0.05 * gv[d]);   // variance floor
+            model.mu[c] = m2; model.var[c] = v2; model.lw[c] = Math.log(nk / n);
+          }
+        }
+        // how your own voice scores (windows of 12 frames ≈ 0.2 s) — the 0 point of the match %
+        var ll = frames.map(function (f) { return logpdf(model, f); }), wins = [];
+        for (i = 0; i + 12 <= n; i += 3) { var a = 0; for (var q = i; q < i + 12; q++) a += ll[q]; wins.push(a / 12); }
+        var mean = wins.reduce(function (s2, v) { return s2 + v; }, 0) / (wins.length || 1);
+        var sd = Math.sqrt(wins.reduce(function (s2, v) { return s2 + (v - mean) * (v - mean); }, 0) / (wins.length || 1)) || 1;
+        return { k: k, mu: model.mu.map(function (a) { return Array.from(a); }), var: model.var.map(function (a) { return Array.from(a); }), lw: model.lw, mean: mean, sd: sd, frames: n };
+      }
+      /** average log-likelihood of recent frames → a match 0..1 (50% at z = −4: your own pieces mostly score 70–95%, another speaker under 30%) */
+      function match(model, recentLL) {
+        var a = 0;
+        for (var i = 0; i < recentLL.length; i++) a += recentLL[i];
+        var z = (a / recentLL.length - model.mean) / model.sd;
+        return 1 / (1 + Math.exp(-0.9 * (z + 4)));
+      }
+      return { frame: frame, train: train, logpdf: logpdf, match: match, NCEP: NCEP };
+    })();
+
+    const ENGINES = ['fp', 'mfcc', 'ai', 'mix'];
+    const ENGINE_ICON = { fp: '⚡', mfcc: '📊', ai: '🧠', mix: '🛡️' };
+    const ENGINE_NAME = { fp: '⚡ טביעת קול', mfcc: '📊 מודל קול', ai: '🧠 בינה מלאכותית', mix: '🛡️ שילוב' };
+    const ENGINE_NOTES = {
+      fp: '⚡ משווה את גובה הצליל ואת "צבע" הקול לטביעה שרשמת. מיידי וקל — אבל בבדיקה שלי הוא העביר גם 88% מהדיבור של דובר אחר.',
+      mfcc: '📊 מודל סטטיסטי של הקול שלך (MFCC — השיטה הקלאסית לזיהוי דוברים). מחליט תוך חמישית שנייה. בבדיקות שלי (הקלטות נקיות): עברו 82%–86% מהדיבור של הדובר הרשום, ו-0%–4% של דובר אחר.',
+      ai: '🧠 רשת נוירונים (CAM++) שמכירה אלפי קולות, ובודקת כל משפט אם זה אתה. בבדיקות שלי (הקלטות נקיות): עברו 90%–98% מהדיבור של הדובר הרשום, ו-0% של דובר אחר. חצי השנייה הראשונה של משפט מחכה לתשובה שלה.',
+      mix: '🛡️ מודל הקול פותח מיד — בלי לחתוך את תחילת המשפט — והבינה בודקת אחרי חצי שנייה: אם זה לא אתה, היא סוגרת עד ההפסקה הבאה. בבדיקה שלי: עברו 97% מהדיבור של הדובר הרשום, ו-3% של דובר אחר.'
+    };
+    let voiceMfcc = null;   // 📊 the model of your voice (from the registration)
+    let voiceAi = null;     // 🧠 the AI's print of your voice (512 numbers)
+    let captureSource = null;   // the sound the voice check listens to (the same the analyser hears)
+    const mf = { recent: [], db: null, enroll: null };
+    // a phrase = speech until a pause longer than the hold time; the AI answers about the current phrase
+    const phrase = { id: 0, start: 0, lastLoud: 0, ai: null, checking: false, lastCheck: 0, blocked: false, prevYes: false, prevAt: 0 };
+
+    function f32ToB64(a) {
+      const b = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+      let s = '';
+      for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+      return btoa(s);
+    }
+    function b64ToF32(s) {
+      const bin = atob(s), b = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) b[i] = bin.charCodeAt(i);
+      return new Float32Array(b.buffer);
+    }
+    function loadVoicePrints() {
+      try { const s = localStorage.getItem('voice_fingerprint'); voiceFingerprint = s ? JSON.parse(s) : null; } catch (e) { voiceFingerprint = null; }
+      try { const s = localStorage.getItem('voice_mfcc'); voiceMfcc = s ? JSON.parse(s) : null; } catch (e) { voiceMfcc = null; }
+      try { const s = localStorage.getItem('voice_ai'); voiceAi = s ? b64ToF32(s) : null; } catch (e) { voiceAi = null; }
+      if (voiceAi && voiceAi.length !== 512) voiceAi = null;
+      if (voiceMfcc && !(voiceMfcc.k > 0 && voiceMfcc.mu)) voiceMfcc = null;
+      document.getElementById('voice-enrolled-badge').style.display = voiceFingerprint ? 'flex' : 'none';
+    }
+    /** the engine that really runs now: the chosen one, or the closest one that has what it needs */
+    function engineInUse() {
+      const ai = !!voiceAi && aiState === 'ready';
+      switch (tune.engine) {
+        case 'ai': return ai ? 'ai' : voiceMfcc ? 'mfcc' : 'fp';
+        case 'mix': return voiceMfcc ? (ai ? 'mix' : 'mfcc') : ai ? 'ai' : 'fp';
+        case 'mfcc': return voiceMfcc ? 'mfcc' : 'fp';
+        default: return 'fp';
+      }
+    }
+    function matchBar() { return tune.matchBy[tune.engine] / 100; }
+    // the AI's cosine similarity → a 0..1 match (in a test: your voice 0.5–0.75 → 80–100%, another voice 0.04–0.2 → 0–20%)
+    function aiMatch(cos) { return Math.max(0, Math.min(1, (cos - 0.10) / 0.50)); }
+    function newPhrase(now) {
+      if (phrase.ai !== null) phrase.prevYes = phrase.ai >= matchBar() && !phrase.blocked;
+      phrase.prevAt = phrase.lastLoud;
+      phrase.id++;
+      phrase.start = now;
+      phrase.ai = null;
+      phrase.blocked = false;
+      phrase.lastCheck = 0;
+      mf.recent.length = 0;
+    }
+    /** "is it you?" for one turn of the audio loop → { open, extra } */
+    function voiceGate(loud, now, freqData, timeData) {
+      if (!voiceFingerprint) return { open: false, extra: 'צריך רישום' };
+      const eng = engineInUse(), bar = matchBar();
+      if (loud) {
+        if (now - phrase.lastLoud > Math.max(tune.hold, 250)) newPhrase(now);
+        phrase.lastLoud = now;
+      }
+      let score = -1;
+      if (eng === 'fp') {
+        if (loud) {
+          score = compareFingerprints(voiceFingerprint, extractVoiceFeatures(freqData, timeData));
+          if (score >= bar) voiceLastMatchTime = now;
+        }
+      } else {
+        let mfScore = -1;
+        if (loud && (eng === 'mfcc' || eng === 'mix')) {
+          if (!mf.db || mf.db.length !== analyzerNode.frequencyBinCount) mf.db = new Float32Array(analyzerNode.frequencyBinCount);
+          analyzerNode.getFloatFrequencyData(mf.db);
+          mf.recent.push(MFCC.logpdf(voiceMfcc, MFCC.frame(mf.db, audioContext.sampleRate / analyzerNode.fftSize)));
+          if (mf.recent.length > 12) mf.recent.shift();
+          if (mf.recent.length >= 6) mfScore = MFCC.match(voiceMfcc, mf.recent);
+        }
+        if (loud && (eng === 'ai' || eng === 'mix')) aiMaybeCheck(now, eng);
+        const aiSaid = phrase.ai;   // the AI's answer about this phrase (null = not yet)
+        if (aiSaid !== null && aiSaid < bar) phrase.blocked = true;   // "not you": closed until the next pause
+        if (eng === 'mfcc') {
+          score = mfScore;
+          if (mfScore >= bar) voiceLastMatchTime = now;
+        } else if (eng === 'ai') {
+          score = aiSaid === null ? -1 : aiSaid;
+          if (loud && aiSaid !== null && aiSaid >= bar) voiceLastMatchTime = now;
+          // before its first answer: go on if you were talking just before (no cut in the middle of your sentence)
+          if (loud && aiSaid === null && phrase.prevYes && phrase.start - phrase.prevAt < 1500) voiceLastMatchTime = now;
+        } else {
+          // 🛡️ until the AI answers, the voice model decides - generously (the AI checks right after);
+          // then the AI's answer counts: "you" keeps it open, "not you" closes it (blocked above)
+          score = aiSaid !== null ? aiSaid : mfScore;
+          if (loud) {
+            if (aiSaid !== null) { if (aiSaid >= bar) voiceLastMatchTime = now; }
+            else if (mfScore >= bar * 0.6 || (phrase.prevYes && phrase.start - phrase.prevAt < 1500)) voiceLastMatchTime = now;
+          }
+        }
+      }
+      const open = !phrase.blocked && (now - voiceLastMatchTime) < tune.hold;
+      if (score >= 0) { tuneLive.match = score; tuneLive.matchAt = now; tuneLive.engine = eng; }
+      const icon = ENGINE_ICON[eng];
+      let extra = '';
+      if (phrase.blocked && loud) extra = '✗ לא אתה ' + icon;
+      else if (score >= 0) extra = (open ? '✓ זיהוי ' : '✗ לא מזוהה ') + icon + ' ' + Math.round(score * 100) + '%';
+      else if (loud) extra = icon + ' בודק...';
+      return { open, extra };
+    }
+
+    // ---- 🧠 the AI: a Web Worker with ONNX Runtime + the CAM++ model, downloaded once into the phone's cache storage
+    const AI_CACHE = 'silent-chat-ai-v1';
+    const AI_MODEL = 'campplus-voxceleb-en.onnx';
+    const AI_FILES = { 'ort.wasm.min.js': 50196, 'ort-wasm-simd-threaded.mjs': 24381, 'ort-wasm-simd-threaded.wasm': 14239897, 'campplus-voxceleb-en.onnx': 29596978 };
+    const AI_MB = Math.round(Object.values(AI_FILES).reduce((a, b) => a + b, 0) / 1e6);
+    let aiWorker = null;
+    let aiState = 'unknown';   // unknown · missing · downloading · loading · ready · error · unsupported
+    let aiProgress = 0;
+    let aiAsked = false;       // the person tapped "download" (so: say when it is ready)
+    let aiEnrollWait = null;
+    function aiBase() {   // the app downloads from the site; the site from itself
+      return isNativeApp ? 'https://itayiiii.github.io/silent-chat/ai/' : new URL('ai/', location.href).href;
+    }
+    function aiSupported() {
+      return typeof WebAssembly === 'object' && typeof Worker === 'function' && typeof caches === 'object' && typeof AudioWorkletNode === 'function';
+    }
+    async function aiCached() {
+      try {
+        const c = await caches.open(AI_CACHE);
+        for (const f in AI_FILES) if (!(await c.match(aiBase() + f))) return false;
+        return true;
+      } catch (e) { return false; }
+    }
+    /** voice mode with 🧠 / 🛡️: start the AI if it is already in the phone (it never downloads without a tap) */
+    async function aiPrepare() {
+      if (filterMode !== 'voice' || (tune.engine !== 'ai' && tune.engine !== 'mix')) return;
+      if (aiWorker || aiState === 'unsupported') return;
+      if (!aiSupported()) { aiState = 'unsupported'; renderAi(); return; }
+      if (await aiCached()) { if (!aiWorker) aiStart(); }
+      else if (!aiWorker) { aiState = aiState === 'error' ? 'error' : 'missing'; renderAi(); }
+    }
+    function aiButton() {
+      if (aiState === 'ready') { if (!voiceAi) startEnrollment(); return; }
+      if (!aiWorker) { aiAsked = true; aiStart(); }
+    }
+    function aiStart() {
+      aiState = 'loading';
+      aiProgress = 0;
+      renderAi();
+      let w;
+      try { w = new Worker('ai-worker.js'); } catch (e) { aiFail(e); return; }
+      aiWorker = w;
+      w.onmessage = e => aiMessage(w, e.data || {});
+      w.onerror = e => { if (aiWorker === w) aiFail(e.message || 'worker error'); };
+      w.postMessage({ type: 'init', base: aiBase(), model: AI_MODEL, cache: AI_CACHE, files: AI_FILES });
+      aiAttach();
+    }
+    function aiFail(err) {
+      console.warn('AI:', err);
+      if (aiWorker) aiWorker.terminate();
+      aiWorker = null;
+      phrase.checking = false;
+      aiState = 'error';
+      if (aiEnrollWait) { aiEnrollWait(null); aiEnrollWait = null; }
+      renderAi();
+      renderTune();
+    }
+    function aiStop() {
+      if (aiWorker) aiWorker.terminate();
+      aiWorker = null;
+      phrase.checking = false;
+      if (aiState !== 'unsupported' && aiState !== 'error') aiState = 'unknown';
+    }
+    function aiMessage(w, m) {
+      if (w !== aiWorker) return;
+      if (m.type === 'progress') {
+        aiProgress = m.total ? m.loaded / m.total : 0;
+        // a fresh download (not just reading the cache) shows as "downloading"
+        if (aiState === 'loading' && m.fresh) aiState = 'downloading';
+        renderAi();
+      } else if (m.type === 'ready') {
+        aiState = 'ready';
+        if (aiAsked) showToast('🧠 הבינה המלאכותית מוכנה' + (voiceAi ? '' : ' — רשום שוב את הקול'), 'success');
+        aiAsked = false;
+        renderTune();
+      } else if (m.type === 'emb') {
+        phrase.checking = false;
+        if (m.id !== phrase.id || !voiceAi) return;   // an answer about a phrase that is already over
+        let c = 0;
+        for (let i = 0; i < voiceAi.length; i++) c += voiceAi[i] * m.emb[i];
+        phrase.ai = aiMatch(c);
+      } else if (m.type === 'skip') {
+        phrase.checking = false;
+      } else if (m.type === 'enrolled' || m.type === 'enroll-failed') {
+        if (aiEnrollWait) { aiEnrollWait(m.type === 'enrolled' ? m.emb : null); aiEnrollWait = null; }
+      } else if (m.type === 'error') {
+        if (aiState !== 'ready') aiFail(m.message);
+        else { phrase.checking = false; console.warn('AI check:', m.message); }
+      }
+    }
+    function aiMaybeCheck(now, eng) {
+      if (aiState !== 'ready' || !aiWorker || phrase.checking) return;
+      const speech = now - phrase.start;
+      if (speech < (eng === 'ai' ? 400 : 600)) return;   // needs ~half a second of the phrase
+      if (phrase.ai !== null && now - phrase.lastCheck < 1200) return;   // long phrases: again every ~1.2 s
+      phrase.checking = true;
+      phrase.lastCheck = now;
+      aiWorker.postMessage({ type: 'check', id: phrase.id, seconds: Math.min(1.6, speech / 1000 + 0.15) });
+    }
+    /** the microphone's sound → the worker (an AudioWorklet posts it straight there, not through this page) */
+    async function aiAttach() {
+      const ctx = audioContext, src = captureSource, w = aiWorker;
+      if (!ctx || !src || !w) return;
+      try {
+        if (!(await workletReady(ctx)) || ctx !== audioContext || w !== aiWorker) return;
+        const node = new AudioWorkletNode(ctx, 'silent-chat-capture', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [1] });
+        const silent = ctx.createGain();
+        silent.gain.value = 0;
+        src.connect(node);
+        node.connect(silent);
+        silent.connect(ctx.destination);
+        const ch = new MessageChannel();
+        node.port.postMessage({ port: ch.port1 }, [ch.port1]);
+        w.postMessage({ type: 'port', port: ch.port2, rate: ctx.sampleRate }, [ch.port2]);
+      } catch (e) {
+        console.warn('AI capture unavailable', e);
+      }
+    }
+    function aiEnrollStop() {
+      if (!aiWorker) return Promise.resolve(null);
+      return new Promise(resolve => {
+        aiEnrollWait = resolve;
+        aiWorker.postMessage({ type: 'enroll-stop', id: Date.now() });
+        setTimeout(() => { if (aiEnrollWait === resolve) { aiEnrollWait = null; resolve(null); } }, 30000);
+      });
+    }
+
+    function renderAi() {
+      const wants = tune.engine === 'ai' || tune.engine === 'mix';
+      const box = document.getElementById('ai-box');
+      box.hidden = !wants || (aiState === 'ready' && !!voiceAi);
+      if (box.hidden) return;
+      const st = document.getElementById('ai-status'), sub = document.getElementById('ai-sub');
+      const btn = document.getElementById('ai-btn'), bar = document.getElementById('ai-bar');
+      const mb = Math.round(aiProgress * AI_MB);
+      let s, small, b = '', showBar = false;
+      if (aiState === 'downloading') {
+        s = '⬇️ מוריד את הבינה... ' + mb + ' מתוך ' + AI_MB + 'MB'; small = 'אפשר להמשיך לדבר בינתיים'; showBar = true;
+      } else if (aiState === 'loading') {
+        s = '🧠 טוען את הבינה...'; small = 'מהזיכרון של הטלפון, בלי אינטרנט'; showBar = aiProgress > 0;
+      } else if (aiState === 'ready') {
+        s = '🧠 הבינה מוכנה — עכשיו רשום שוב את הקול'; small = 'כדי שהיא תכיר אותך (5 שניות)'; b = '🎤 רשום';
+      } else if (aiState === 'error') {
+        s = '❌ ההורדה לא הצליחה'; small = 'בדוק שיש אינטרנט ונסה שוב'; b = '↻ נסה שוב';
+      } else if (aiState === 'unsupported') {
+        s = '😕 הטלפון או הדפדפן הזה לא מריץ את הבינה'; small = 'משתמשים במודל הקול 📊 במקומה';
+      } else {
+        s = '🧠 הבינה צריכה הורדה חד־פעמית של ' + AI_MB + 'MB'; small = 'עדיף ב-Wi-Fi · אחר כך עובדת בלי אינטרנט'; b = '⬇️ הורד';
+      }
+      st.textContent = s;
+      sub.textContent = small;
+      btn.textContent = b;
+      btn.hidden = !b;
+      bar.hidden = !showBar;
+      document.getElementById('ai-fill').style.width = Math.round(aiProgress * 100) + '%';
+    }
+    function setEngine(e) {
+      if (!ENGINES.includes(e) || e === tune.engine) return;
+      tune.engine = e;
+      saveTune();
+      tuneLive.match = -1;
+      renderTune();
+      showToast('מנגנון זיהוי: ' + ENGINE_NAME[e]);
+      aiPrepare();
+    }
+    function updateEnrollStatus() {
+      const el = document.getElementById('enroll-status');
+      if (!voiceFingerprint) { writeText(el, 'לא נרשם עדיין'); return; }
+      const have = (voiceFingerprint ? '⚡' : '') + (voiceMfcc ? '📊' : '') + (voiceAi ? '🧠' : '');
+      const needs = tune.engine === 'mfcc' || tune.engine === 'mix' ? !voiceMfcc : false;
+      writeText(el, needs ? '⚠️ רשום שוב בשביל 📊 מודל קול' : '✓ הקול שלך רשום ' + have);
+    }
+
+    // =========================================================================
     // ניהול מסכים
     // =========================================================================
-    function showHome() {
-      document.getElementById('screen-home').classList.remove('hidden');
-      document.getElementById('screen-join').classList.add('hidden');
-      document.getElementById('screen-room').classList.add('hidden');
+    const SCREENS = ['screen-home', 'screen-join', 'screen-invited', 'screen-room'];
+    function showScreen(id) {
+      SCREENS.forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
+      if (id !== 'screen-join') stopScanner();
     }
+    function showHome() { showScreen('screen-home'); }
     function showJoin() {
-      document.getElementById('screen-home').classList.add('hidden');
-      document.getElementById('screen-join').classList.remove('hidden');
-      document.getElementById('room-code-input').focus();
+      showScreen('screen-join');
+      document.getElementById('join-link-input').value = '';
+      startScanner();
     }
-    function showCreate() {
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      startRoom(code, true);
-    }
-    function showRoom() {
-      document.getElementById('screen-home').classList.add('hidden');
-      document.getElementById('screen-join').classList.add('hidden');
-      document.getElementById('screen-room').classList.remove('hidden');
-      document.getElementById('current-room-code').textContent = roomCode;
-    }
+    function showCreate() { startRoom(newRoomId(), true); }
+    function showRoom() { showScreen('screen-room'); }
 
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
@@ -1958,9 +2502,11 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       speechSource.connect(gainNode);
       gainNode.connect(destinationNode);
       speechSource.connect(analyzerNode);
+      captureSource = speechSource;
 
       outputStream = destinationNode.stream;
       startAudioLoop();
+      if (aiWorker) aiAttach();   // 🧠: the new microphone to the AI too
     }
 
     // =========================================================================
@@ -2016,29 +2562,10 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
           if (loud) vadLastActiveTime = now;
           shouldBeOpen = (now - vadLastActiveTime) < tune.hold;
         } else if (filterMode === 'voice') {
-          // מצב זיהוי קול - הכי מתוחכם
-          if (!voiceFingerprint) {
-            shouldBeOpen = false;
-            extraStatus = 'צריך רישום';
-          } else if (!loud) {
-            // שקט - גם ככה לא צריך לחשב
-            shouldBeOpen = (now - voiceLastMatchTime) < tune.hold;
-          } else {
-            // יש קול - בוא נבדוק אם הוא שלי
-            const currentFeatures = extractVoiceFeatures(freqData, timeData);
-            const similarity = compareFingerprints(voiceFingerprint, currentFeatures);
-            tuneLive.match = similarity;
-            tuneLive.matchAt = now;
-
-            if (similarity * 100 > tune.match) {
-              voiceLastMatchTime = now;
-              shouldBeOpen = true;
-              extraStatus = `✓ זיהוי: ${(similarity * 100).toFixed(0)}%`;
-            } else {
-              shouldBeOpen = (now - voiceLastMatchTime) < tune.hold;
-              extraStatus = `✗ לא מזוהה: ${(similarity * 100).toFixed(0)}%`;
-            }
-          }
+          // זיהוי קולי: המנגנון שבחרת (⚡ / 📊 / 🧠 / 🛡️) מחליט אם זה הקול שלך
+          const g = voiceGate(loud, now, freqData, timeData);
+          shouldBeOpen = g.open;
+          extraStatus = g.extra;
         }
 
         // החל על GainNode
@@ -2062,17 +2589,39 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
 
     // Calls onTick about 60 times a second from the audio thread.
     // Unlike requestAnimationFrame, it keeps going when the screen is off.
-    const AUDIO_TICKER_CODE =
+    // + 'silent-chat-capture': passes the microphone's sound to the AI worker in pieces of 2048 samples
+    const AUDIO_WORKLET_CODE =
       "registerProcessor('silent-chat-ticker', class extends AudioWorkletProcessor {" +
       "  constructor() { super(); this.count = 0; }" +
       "  process() { if (++this.count >= 6) { this.count = 0; this.port.postMessage(0); } return true; }" +
+      "});" +
+      "registerProcessor('silent-chat-capture', class extends AudioWorkletProcessor {" +
+      "  constructor() { super(); this.buf = new Float32Array(2048); this.n = 0; this.out = null;" +
+      "    this.port.onmessage = (e) => { if (e.data && e.data.port) this.out = e.data.port; }; }" +
+      "  process(inputs) {" +
+      "    const ch = inputs[0] && inputs[0][0];" +
+      "    if (ch && this.out) for (let i = 0; i < ch.length; i++) {" +
+      "      this.buf[this.n++] = ch[i];" +
+      "      if (this.n === 2048) { this.out.postMessage(this.buf, [this.buf.buffer]); this.buf = new Float32Array(2048); this.n = 0; }" +
+      "    }" +
+      "    return true; }" +
       "});";
+    /** loads the worklet module once per audio context → true when it is there */
+    function workletReady(ctx) {
+      if (!ctx._worklet) {
+        ctx._worklet = (async () => {
+          if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return false;
+          const url = URL.createObjectURL(new Blob([AUDIO_WORKLET_CODE], { type: 'application/javascript' }));
+          try { await ctx.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+          return ctx.state !== 'closed';
+        })().catch(err => { console.warn('AudioWorklet unavailable', err); return false; });
+      }
+      return ctx._worklet;
+    }
 
     async function startAudioTicker(ctx, onTick) {
       try {
-        if (!ctx.audioWorklet || typeof AudioWorkletNode === 'undefined') return false;
-        const url = URL.createObjectURL(new Blob([AUDIO_TICKER_CODE], { type: 'application/javascript' }));
-        try { await ctx.audioWorklet.addModule(url); } finally { URL.revokeObjectURL(url); }
+        if (!(await workletReady(ctx))) return false;
         if (ctx.state === 'closed') return false;
         const ticker = new AudioWorkletNode(ctx, 'silent-chat-ticker', { numberOfInputs: 0, numberOfOutputs: 1 });
         const silence = ctx.createGain();
@@ -2217,6 +2766,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         if (!rawStream) {
           throw new Error('אין stream פעיל');
         }
+        mf.enroll = [];                                              // 📊 the frames for the voice model
+        if (aiWorker) aiWorker.postMessage({ type: 'enroll-start' });   // 🧠 the worker records too
 
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
         const source = ctx.createMediaStreamSource(rawStream);
@@ -2232,6 +2783,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         const startTime = Date.now();
         const freqData = new Uint8Array(analyzer.frequencyBinCount);
         const timeData = new Float32Array(analyzer.fftSize);
+        const dbData = new Float32Array(analyzer.frequencyBinCount);
 
         // visualization canvas
         const canvas = document.getElementById('enroll-canvas');
@@ -2254,6 +2806,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
             if (features.pitch > 0) {
               enrollmentSamples.push(features);
             }
+            analyzer.getFloatFrequencyData(dbData);
+            mf.enroll.push(MFCC.frame(dbData, ctx.sampleRate / analyzer.fftSize));
           }
 
           // UI - שעון ספירה לאחור
@@ -2282,7 +2836,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       }
     }
 
-    function finalizeEnrollment() {
+    async function finalizeEnrollment() {
       isEnrolling = false;
 
       if (enrollmentCtx) {
@@ -2292,6 +2846,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       }
 
       if (enrollmentSamples.length < 20) {
+        if (aiWorker) aiWorker.postMessage({ type: 'enroll-cancel' });
         showToast('לא נקלט מספיק קול. נסה שוב ודבר חזק יותר', 'error');
         document.getElementById('enroll-start-btn').disabled = false;
         document.getElementById('enroll-start-btn').textContent = 'נסה שוב';
@@ -2324,18 +2879,30 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         sampleCount: n
       };
 
+      // 📊 the voice model, from the same recording
+      voiceMfcc = mf.enroll && mf.enroll.length >= 40 ? MFCC.train(mf.enroll) : null;
+      mf.enroll = null;
+      // 🧠 the AI's print, when the AI is on (it may still be loading: then this waits for it)
+      if (aiWorker) {
+        document.getElementById('enroll-start-btn').textContent = '🧠 הבינה לומדת את הקול שלך...';
+        voiceAi = await aiEnrollStop();
+      } else {
+        voiceAi = null;   // a new recording: the AI learns it again after the download
+      }
+
       // שמירה ב-localStorage לשימוש חוזר
       try {
         localStorage.setItem('voice_fingerprint', JSON.stringify(voiceFingerprint));
+        if (voiceMfcc) localStorage.setItem('voice_mfcc', JSON.stringify(voiceMfcc)); else localStorage.removeItem('voice_mfcc');
+        if (voiceAi) localStorage.setItem('voice_ai', f32ToB64(voiceAi)); else localStorage.removeItem('voice_ai');
       } catch (e) {}
 
       // עדכון UI
-      document.getElementById('enroll-status').textContent =
-        `✓ הקול שלך נרשם · ${n} דגימות`;
       document.getElementById('voice-enrolled-badge').style.display = 'flex';
       renderTune();
+      document.getElementById('enroll-start-btn').textContent = '✓ נרשם';
 
-      showToast('הקול שלך נרשם!', 'success');
+      showToast('הקול שלך נרשם! ' + (voiceFingerprint ? '⚡' : '') + (voiceMfcc ? '📊' : '') + (voiceAi ? '🧠' : ''), 'success');
 
       setTimeout(() => {
         document.getElementById('enrollment-modal').classList.remove('visible');
@@ -2344,6 +2911,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
 
     function cancelEnrollment() {
       isEnrolling = false;
+      mf.enroll = null;
+      if (aiWorker) aiWorker.postMessage({ type: 'enroll-cancel' });
       if (enrollmentCtx) {
         enrollmentCtx.close();
         enrollmentCtx = null;
@@ -2400,18 +2969,6 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     async function setFilterMode(mode) {
       if (mode === filterMode) return;
 
-      // אם עוברים למצב voice בלי טביעה - פותחים את מסך הרישום
-      if (mode === 'voice' && !voiceFingerprint) {
-        const before = filterMode;
-        filterMode = mode;
-        markMode(mode);
-        setTuneName(mode, before);
-        document.getElementById('ptt-row').classList.remove('visible');
-        renderTune();
-        showToast('לחץ "רשום את הקול שלי" כדי להפעיל', 'info');
-        return;
-      }
-
       const oldMode = filterMode;
       filterMode = mode;
 
@@ -2430,7 +2987,10 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         await reloadMicrophone(needsBrowserFilter);
       }
 
-      showToast('מצב: ' + getModeName(mode));
+      if (mode === 'voice') aiPrepare();
+      // voice mode without a registration: the card shows "רשום את הקול שלי" (the registration hears the same microphone)
+      if (mode === 'voice' && !voiceFingerprint) showToast('לחץ "רשום את הקול שלי" כדי להפעיל', 'info');
+      else showToast('מצב: ' + getModeName(mode));
     }
 
     function markMode(mode) {
@@ -2529,10 +3089,23 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         'כמה זמן המיקרופון נשאר פתוח אחרי שהפסקת לדבר, כדי שסופי מילים לא ייחתכו.',
         'קצר = פחות רעש בין משפטים. ארוך = דיבור רציף יותר.'] },
       'match-now': { title: 'התאמה לקול שלך', body: [
-        'כשמישהו מדבר, האפליקציה בודקת כמה הקול דומה לקול שרשמת. הקו הוא הרף: מעליו — "זה אתה" והקול עובר לחברים.'] },
+        'כשמישהו מדבר, המנגנון שבחרת בודק כמה הקול דומה לקול שרשמת. הקו הוא הרף: מעליו — "זה אתה" והקול עובר לחברים.',
+        'הסימן לפני המספר אומר מי בדק: ⚡ טביעת קול, 📊 מודל קול, 🧠 בינה מלאכותית.'] },
       'match': { title: 'כמה קפדני הזיהוי', body: [
         'גבוה = רק קול שדומה מאוד לשלך עובר: פחות קולות של אחרים, אבל לפעמים גם המילים שלך נחתכות.',
-        'נמוך = סלחני יותר.'] },
+        'נמוך = סלחני יותר.',
+        'לכל מנגנון יש רף משלו (הם מודדים אחרת). כדאי לדבר רגיל ולראות איפה הפס של "התאמה — עכשיו" מגיע, ולשים את הרף קצת מתחת.'] },
+      'engine': { title: 'מנגנון זיהוי', body: [
+        '⚡ טביעת קול — משווה את גובה הצליל ואת "צבע" הקול. מיידי וקל, אבל מתבלבל בקלות.',
+        '📊 מודל קול — MFCC, הדרך הקלאסית לזיהוי דוברים: מודל סטטיסטי של הקול שלך. מחליט תוך חמישית שנייה.',
+        '🧠 בינה מלאכותית — רשת נוירונים (CAM++) שאומנה על אלפי קולות. הכי מדויקת, אבל צריכה חצי שנייה מכל משפט כדי להחליט, והורדה חד־פעמית של 44MB.',
+        '🛡️ שילוב (ברירת המחדל) — מודל הקול פותח מיד, והבינה מאשרת או סוגרת אחרי חצי שנייה. בלי הבינה (לפני ההורדה) — עובד כמו מודל קול.',
+        'רישום אחד של 5 שניות מלמד את כולם. הכל נשאר רק בטלפון שלך.'] },
+      'ai-download': { title: 'הורדת הבינה המלאכותית', body: [
+        'הבינה היא קובץ של כ-44MB (המודל + המנוע שמריץ אותו). יורדת פעם אחת ונשמרת בטלפון — אחר כך עובדת בלי אינטרנט.',
+        'עדיף להוריד ב-Wi-Fi: בחבילת גלישה זה 44MB מהחבילה.',
+        'אחרי ההורדה רושמים שוב את הקול (5 שניות), כדי שהבינה תכיר אותך.',
+        'הקול שלך לא נשלח לשום מקום — הבדיקה נעשית בתוך הטלפון.'] },
       'ns': { title: 'סינון רעש של הטלפון', body: [
         'הסינון המובנה של הטלפון מנקה רעש רקע קבוע (מזגן, המולה). פועל במצבים בסיסי וחכם.',
         'כבוי — הקול טבעי יותר, אבל עם יותר רעש.'] },
@@ -2545,21 +3118,41 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       'reset': { title: 'חזרה לברירת המחדל', body: [
         'מחזיר את כל ההגדרות בכרטיס הכיוון למה שהיה בהתחלה. טביעת הקול שרשמת נשארת.'] },
       'create': { title: 'צור חדר חדש', body: [
-        'פותח חדר שיחה חדש ומציג קוד של 6 ספרות.',
-        'שלח את הקוד לחברים שיושבים איתך. כל מי שמקליד אותו מצטרף לשיחה.',
+        'פותח חדר שיחה חדש ומציג קוד QR עם המפתח הסודי של החדר.',
+        'החברים שיושבים איתך לוחצים "הצטרף לחדר" ומכוונים את המצלמה לקוד. לחבר שלא לידך — שולחים קישור.',
         'בפעם הראשונה הטלפון יבקש אישור לשימוש במיקרופון.'] },
       'join': { title: 'הצטרף לחדר', body: [
-        'אם חבר כבר פתח חדר, בקש ממנו את הקוד (6 ספרות) והקלד אותו.',
-        'אחרי ההצטרפות כולם בחדר שומעים אחד את השני באוזניות.'] },
+        'פותח את המצלמה: מכוונים אותה לקוד ה-QR בטלפון של מי שפתח את החדר — ונכנסים לבד.',
+        'קיבלת קישור בהודעה? לוחצים עליו, או מדביקים אותו בתחתית המסך.',
+        'בפעם הראשונה הטלפון יבקש אישור למצלמה ולמיקרופון. אחרי ההצטרפות כולם בחדר שומעים אחד את השני באוזניות.'] },
+      'scan': { title: 'סריקת הקוד', body: [
+        'מי שפתח את החדר לוחץ "הזמן חברים" — ועל המסך שלו מופיע קוד QR.',
+        'מכוונים את המצלמה לקוד, ממרחק של 15–30 ס״מ. ברגע שהקוד נקלט — נכנסים לחדר.',
+        'לא נקלט? שהחבר יגביר את הבהירות של המסך שלו — או שישלח לך קישור.'] },
+      'paste': { title: 'הצטרפות עם קישור', body: [
+        'חבר יכול לשלוח לך את החדר בהודעה — בכפתור "שלח הזמנה בוואטסאפ" אצלו.',
+        'לוחצים על הקישור — או מעתיקים אותו, מדביקים כאן ולוחצים "הצטרף".'] },
+      'invited': { title: 'הזמנה לשיחה', body: [
+        'פתחת קישור שחבר שלח לך. בקישור יש את המפתח הסודי של החדר שלו.',
+        'לוחצים "הצטרף עכשיו", מאשרים מיקרופון — ומדברים.'] },
+      'invite': { title: 'הזמנת חברים', body: [
+        'מציג את קוד ה-QR של החדר. החברים לוחצים "הצטרף לחדר" ומכוונים את המצלמה לקוד — וזהו.',
+        'בקוד יש מפתח סודי ואקראי של 16 תווים (יותר ממיליון מיליארד מיליארד אפשרויות), אז אי אפשר לנחש אותו או "להריץ מספרים": נכנס רק מי שרואה את הקוד או מקבל ממך את הקישור.',
+        'כל מי שכבר בחדר יכול להציג את הקוד ולהזמין עוד חברים.'] },
+      'whatsapp': { title: 'הזמנה בוואטסאפ', body: [
+        'פותח את וואטסאפ עם הזמנה מוכנה: בוחרים קבוצה או חברים, ושולחים.',
+        'כל מי שקיבל את ההזמנה לוחץ על הקישור ונכנס לחדר — גם בלי להתקין כלום (זה נפתח בדפדפן).',
+        'בהזמנה יש את המפתח הסודי של החדר, אז שלח רק לחברים. אם תנעל את החדר, גם מי שקיבל הזמנה ייכנס רק אחרי שתפתח.'] },
+      'share': { title: 'שליחה בדרך אחרת', body: [
+        'שולחים את הקישור לחדר בכל אפליקציה אחרת: SMS, מייל, טלגרם... החבר לוחץ על הקישור ומצטרף.',
+        'מי שיש לו את הקישור יכול להיכנס — שלח רק לחברים. כשכולם בפנים, אפשר לנעול את החדר.'] },
+      'lock': { title: 'נעילת החדר', body: [
+        'נעול: אף אחד חדש לא נכנס — גם אם יש לו את הקוד או את הקישור.',
+        'מי שכבר היה בחדר ונפל (למשל עבר מ-Wi-Fi לסלולר) יכול לחזור גם כשנעול.',
+        'כל מי שבחדר יכול לנעול ולפתוח.'] },
       'install': { title: 'התקן כאפליקציה', body: [
         'מוסיף את שיחה שקטה למסך הבית, כמו אפליקציה רגילה.',
         'היא תיפתח במסך מלא, בלי שורת הכתובת של הדפדפן.'] },
-      'code-input': { title: 'קוד החדר', body: [
-        '6 ספרות שמופיעות בראש המסך אצל מי שפתח את החדר.',
-        'בקש ממנו את הקוד והקלד אותו כאן.'] },
-      'room-code': { title: 'קוד החדר', body: [
-        'זה המספר של החדר שלך. שתף אותו עם החברים - בוואטסאפ או בקול.',
-        'הם לוחצים "הצטרף לחדר" ומקלידים אותו. כל מי שמקליד את אותו קוד נכנס לאותה שיחה.'] },
       'status': { title: 'מצב החיבור', body: [
         'מתחבר... - הטלפון יוצר קשר עם השרת. אחרי הפסקה ארוכה זה יכול לקחת עד דקה, כי השרת צריך להתעורר.',
         'מחובר - הכל תקין.',
@@ -2575,14 +3168,15 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         'כשאתה שותק, החברים לא שומעים את הרעש סביבך. לפעמים תחילת מילה שקטה נחתכת.'] },
       'mode-voice': { title: '🧬 זיהוי קולי (ניסיוני)', body: [
         'אחרי רישום קצר של הקול שלך, רק קול שדומה לשלך עובר לחברים.',
+        'בכרטיס הכיוון בוחרים מנגנון: ⚡ טביעת קול, 📊 מודל קול, 🧠 בינה מלאכותית, או 🛡️ שילוב (ברירת המחדל).',
         'סימן ✓ על הכפתור = הקול שלך כבר רשום.',
         'עדיין ניסיוני: יכול לטעות אם אתה לוחש, מצונן, או אם מישהו עם קול דומה מדבר לידך.'] },
       'mode-ptt': { title: '🎙️ לחץ ודבר', body: [
         'המיקרופון סגור כל הזמן. כל עוד אתה מחזיק את הכפתור הגדול - החברים שומעים אותך.',
         'הכי אמין במקום רועש מאוד, אבל צריך לזכור ללחוץ.'] },
       'enroll': { title: 'רישום קול', body: [
-        'מקליט 5 שניות מהקול שלך ושומר "טביעה" שלו - רק בטלפון שלך.',
-        'במצב זיהוי קולי, רק קול שדומה לטביעה עובר לחברים.',
+        'מקליט 5 שניות מהקול שלך ושומר ממנו "טביעה" לכל מנגנון: ⚡ 📊 ו-🧠 (כשהבינה מורדת) — רק בטלפון שלך.',
+        'במצב זיהוי קולי, רק קול שדומה לשלך עובר לחברים.',
         'כדאי להקליט במקום שקט ובקול רגיל - לא בלחישה ולא בצעקה.'] },
       'ptt': { title: 'לחץ ודבר', body: [
         'לחץ והחזק - החברים שומעים אותך.',
@@ -2596,7 +3190,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         'לחיצה נוספת מחזירה את המיקרופון.'] },
       'leave': { title: 'עזוב', body: [
         'יוצא מהחדר ומכבה את המיקרופון.',
-        'החברים ממשיכים לדבר ביניהם. אפשר לחזור עם אותו קוד.'] }
+        'החברים ממשיכים לדבר ביניהם. אפשר לחזור — לסרוק שוב את הקוד אצל אחד מהם.'] }
     };
 
     function showHelp(key) {
@@ -2625,21 +3219,28 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // כיוון אישי - סף, החזקה, התאמת קול וסינונים. נשמר בטלפון בלבד.
     // =========================================================================
     const TUNE_KEY = 'silentchat.tune';
-    const TUNE_DEFAULTS = { threshold: 50, auto: false, margin: 12, hold: 300, match: 65, ns: true, agc: true, band: false };
+    // engine: the voice recognition engine; matchBy: "כמה קפדני הזיהוי" for each engine (their scores differ)
+    const TUNE_DEFAULTS = { threshold: 50, auto: false, margin: 12, hold: 300, ns: true, agc: true, band: false,
+      engine: 'mix', matchBy: { fp: 65, mfcc: 50, ai: 45, mix: 40 } };
     // [step, min, max] for the − / + keys
-    const TUNE_STEPS = { margin: [2, 4, 40], hold: [100, 100, 2000], match: [5, 40, 90] };
-    const MODE_ORDER = ['off', 'basic', 'smart', 'voice', 'ptt'];
+    const TUNE_STEPS = { margin: [2, 4, 40], hold: [100, 100, 2000], match: [5, 20, 90] };
+    const MODE_ORDER = ['off', 'basic', 'voice', 'smart', 'ptt'];   // as on the screen
     let tune = loadTune();
     let noiseFloor = null;   // the background noise on the meter scale, measured while in a room
-    const tuneLive = { level: 0, threshold: 50, match: -1, matchAt: 0, ticks: 0 };
+    const tuneLive = { level: 0, threshold: 50, match: -1, matchAt: 0, ticks: 0, engine: 'fp' };
 
     function cleanTune(t) {
       const out = Object.assign({}, TUNE_DEFAULTS);
       if (!t || typeof t !== 'object') return out;
       const num = (v, min, max, d) => (typeof v === 'number' && isFinite(v) ? Math.min(max, Math.max(min, v)) : d);
       out.threshold = num(t.threshold, 2, 98, out.threshold);
-      for (const k in TUNE_STEPS) out[k] = num(t[k], TUNE_STEPS[k][1], TUNE_STEPS[k][2], out[k]);
+      for (const k of ['margin', 'hold']) out[k] = num(t[k], TUNE_STEPS[k][1], TUNE_STEPS[k][2], out[k]);
       for (const k of ['auto', 'ns', 'agc', 'band']) if (typeof t[k] === 'boolean') out[k] = t[k];
+      if (['fp', 'mfcc', 'ai', 'mix'].includes(t.engine)) out.engine = t.engine;
+      const [, lo, hi] = TUNE_STEPS.match;
+      out.matchBy = Object.assign({}, TUNE_DEFAULTS.matchBy);
+      if (t.matchBy && typeof t.matchBy === 'object') for (const k in out.matchBy) out.matchBy[k] = num(t.matchBy[k], lo, hi, out.matchBy[k]);
+      else if (typeof t.match === 'number') out.matchBy.fp = num(t.match, lo, hi, out.matchBy.fp);   // from version 0.1.5
       return out;
     }
     function loadTune() {
@@ -2691,10 +3292,22 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       });
       document.querySelectorAll('#tune [data-tune]').forEach(s => {
         const el = s.querySelector('.num');
-        const text = tuneText(s.dataset.tune, tune[s.dataset.tune]);
+        const text = tuneText(s.dataset.tune, tuneValue(s.dataset.tune));
         if (el.dataset.v !== text) { writeText(el, text); el.dataset.v = text; }
       });
       document.getElementById('enroll-btn').textContent = voiceFingerprint ? '🎤 רשום שוב' : '🎤 רשום את הקול שלי';
+      // the engines
+      document.querySelectorAll('#tune [data-engine]').forEach(b => {
+        const on = b.dataset.engine === tune.engine;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-pressed', on ? 'true' : 'false');
+      });
+      const inUse = engineInUse();
+      let engNote = ENGINE_NOTES[tune.engine];
+      if (voiceFingerprint && inUse !== tune.engine) engNote += ' — <b>בינתיים פועל: ' + ENGINE_NAME[inUse] + '</b>';
+      document.getElementById('eng-note').innerHTML = engNote;
+      updateEnrollStatus();
+      renderAi();
       drawTuneMeters();
     }
     function drawTuneMeters() {
@@ -2709,18 +3322,20 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       const fresh = tuneLive.match >= 0 && Date.now() - tuneLive.matchAt < 700;
       const read = document.getElementById('match-read');
       document.getElementById('match-fill').style.width = fresh ? 'calc(' + pct(tuneLive.match * 100) + ' - 6px)' : '0';
-      document.getElementById('match-line').style.left = pct(tune.match);
+      document.getElementById('match-line').style.left = pct(tune.matchBy[tune.engine]);
       if (!voiceFingerprint) { read.textContent = 'צריך לרשום קול'; read.className = 'match-read'; return; }
       if (!fresh) { read.textContent = '—'; read.className = 'match-read'; return; }
-      const yes = tuneLive.match * 100 > tune.match;
-      read.textContent = Math.round(tuneLive.match * 100) + '% · ' + (yes ? 'זה אתה ✓' : 'לא אתה ✗');
+      const yes = tuneLive.match >= matchBar();
+      read.textContent = ENGINE_ICON[tuneLive.engine] + ' ' + Math.round(tuneLive.match * 100) + '% · ' + (yes ? 'זה אתה ✓' : 'לא אתה ✗');
       read.className = 'match-read ' + (yes ? 'yes' : 'no');
     }
+    function tuneValue(key) { return key === 'match' ? tune.matchBy[tune.engine] : tune[key]; }
     function stepTune(key, dir) {
       const [step, min, max] = TUNE_STEPS[key];
-      const v = Math.min(max, Math.max(min, tune[key] + dir * step));
-      if (v === tune[key]) return;
-      tune[key] = v;
+      const cur = tuneValue(key);
+      const v = Math.min(max, Math.max(min, cur + dir * step));
+      if (v === cur) return;
+      if (key === 'match') tune.matchBy[tune.engine] = v; else tune[key] = v;
       saveTune();
       const el = document.querySelector('#tune [data-tune="' + key + '"] .num');
       el.dataset.v = tuneText(key, v);
@@ -2742,6 +3357,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       renderTune();
       showToast('הכיוון חזר לברירת המחדל');
       if (audioContext && (before.ns !== tune.ns || before.agc !== tune.agc || before.band !== tune.band)) reloadMicrophone(microphoneFiltersOn());
+      aiPrepare();
     }
     (function bindTune() {
       const card = document.getElementById('tune');
@@ -2749,7 +3365,9 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         const step = e.target.closest('.k3-step > button');
         if (step) { stepTune(step.parentElement.dataset.tune, +step.dataset.d); return; }
         const tog = e.target.closest('[data-tog]');
-        if (tog) toggleTune(tog.dataset.tog);
+        if (tog) { toggleTune(tog.dataset.tog); return; }
+        const eng = e.target.closest('[data-engine]');
+        if (eng) setEngine(eng.dataset.engine);
       });
       // drag the line (or tap the meter) = a manual threshold
       const meter = document.getElementById('tune-meter');
@@ -2820,13 +3438,253 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // =========================================================================
     // הצטרפות / יצירת חדר
     // =========================================================================
-    async function joinRoom() {
-      const code = document.getElementById('room-code-input').value.trim();
-      if (!/^\d{6}$/.test(code)) {
-        showToast('הקוד חייב להיות 6 ספרות', 'error');
+    // =========================================================================
+    // הצטרפות בטוחה: המפתח הסודי של החדר בתוך קוד QR / קישור - בלי מספרים שאפשר לנחש
+    // =========================================================================
+    const APP_URL = 'https://itayiiii.github.io/silent-chat/';
+    // 16 signs out of 32 (no l, o, 0, 1 - they look alike) = 80 random bits:
+    // 1,208,925,819,614,629,174,706,176 possible rooms - nobody can guess one, also not a computer trying all day
+    const ROOM_ABC = 'abcdefghijkmnpqrstuvwxyz23456789';
+    const ROOM_RE = /^[a-km-np-z2-9]{16}$/;
+    const MEMBER_KEY = 'silentchat.member';   // { room, key }: lets you back into your room after a drop, also when it is locked
+    let serverV = 1;            // 2 = the server knows locking (it says hello first)
+    let roomLocked = false;
+    let pendingInvite = null;   // a room from an invite link, waiting for "הצטרף עכשיו"
+    let scanner = null;
+
+    function newRoomId() {
+      const bytes = new Uint8Array(16);
+      crypto.getRandomValues(bytes);
+      return Array.from(bytes, b => ROOM_ABC[b & 31]).join('');
+    }
+    function inviteLink(id) { return APP_URL + '#join=' + id; }
+    /** a scanned code, a pasted link or the bare key → the room's key (or null) */
+    function roomFromText(text) {
+      const t = String(text || '').trim();
+      const m = t.match(/[#?&]join=([A-Za-z0-9]{16})(?![A-Za-z0-9])/) || t.match(/^([A-Za-z0-9]{16})$/);
+      const id = m ? m[1].toLowerCase() : null;
+      return id && ROOM_RE.test(id) ? id : null;
+    }
+    const libs = {};
+    /** lib/qrcode.min.js draws QR codes, lib/jsqr.min.js reads them - each loads the first time it is needed */
+    function loadLib(file) {
+      if (!libs[file]) {
+        libs[file] = new Promise((resolve, reject) => {
+          const s = document.createElement('script');
+          s.src = 'lib/' + file;
+          s.onload = resolve;
+          s.onerror = () => { delete libs[file]; s.remove(); reject(new Error('could not load ' + file)); };
+          document.head.appendChild(s);
+        });
+      }
+      return libs[file];
+    }
+    function memberKeyFor(id) {
+      try {
+        const m = JSON.parse(sessionStorage.getItem(MEMBER_KEY) || 'null');
+        return m && m.room === id ? m.key : undefined;
+      } catch (e) { return undefined; }
+    }
+    function saveMemberKey(id, key) {
+      try { sessionStorage.setItem(MEMBER_KEY, JSON.stringify({ room: id, key: key })); } catch (e) {}
+    }
+
+    // ---- the invite sheet (opens by itself when you create a room; "הזמן חברים" opens it again)
+    async function openInvite() {
+      if (!roomCode) return;
+      document.getElementById('invite-modal').classList.add('visible');
+      updateLockUI();
+      const card = document.getElementById('qr-card');
+      if (card.dataset.room === roomCode) return;
+      try {
+        await loadLib('qrcode.min.js');
+        drawQr(card, inviteLink(roomCode));
+        card.dataset.room = roomCode;
+      } catch (e) {
+        card.querySelector('.qr-wait').textContent = 'אין חיבור לאינטרנט — אפשר לשלוח קישור';
+      }
+    }
+    function drawQr(card, text) {
+      const q = qrcode(0, 'M');
+      q.addData(text);
+      q.make();
+      const n = q.getModuleCount(), m = 3;   // + the white card's padding = the quiet zone a scanner needs
+      let d = '';
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) d += 'M' + (c + m) + ' ' + (r + m) + 'h1v1h-1z';
+      const old = card.querySelector('svg');
+      if (old) old.remove();
+      card.querySelector('.qr-wait').hidden = true;
+      card.insertAdjacentHTML('afterbegin', '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + (n + 2 * m) + ' ' + (n + 2 * m) +
+        '" shape-rendering="crispEdges" role="img" aria-label="קוד QR של החדר"><path fill="#000" d="' + d + '"/></svg>');
+    }
+    function closeInvite() {
+      document.getElementById('invite-modal').classList.remove('visible');
+    }
+    function inviteText(id) {
+      return '🎧 בוא לשיחה שקטה איתי!\nלוחצים על הקישור ומצטרפים — שומעים אחד את השני באוזניות גם כשרועש מסביב:\n' + inviteLink(id);
+    }
+    /** WhatsApp opens with the invitation ready: you pick a group or friends, and everyone who gets it can join */
+    async function shareWhatsApp() {
+      if (!roomCode) return;
+      const text = inviteText(roomCode);
+      if (isNativeApp && typeof window.Capacitor.nativePromise === 'function') {
+        try { await window.Capacitor.nativePromise('SilentCall', 'share', { text: text, title: 'הזמנה לשיחה שקטה', app: 'whatsapp' }); return; }
+        catch (e) { /* an older app: WhatsApp's link below */ }
+      }
+      const w = window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+      if (!w) showToast('לא הצלחתי לפתוח את וואטסאפ — נסה "בדרך אחרת"', 'error');
+    }
+    async function shareInvite() {
+      if (!roomCode) return;
+      const link = inviteLink(roomCode), text = 'בוא לשיחה שקטה איתי 🎧 לוחצים על הקישור ומצטרפים:';
+      if (isNativeApp && typeof window.Capacitor.nativePromise === 'function') {
+        try { await window.Capacitor.nativePromise('SilentCall', 'share', { text: text + '\n' + link, title: 'הזמנה לשיחה שקטה' }); return; }
+        catch (e) { /* an older app: copy instead */ }
+      } else if (navigator.share) {
+        try { await navigator.share({ title: 'שיחה שקטה', text: text, url: link }); return; }
+        catch (e) { if (e && e.name === 'AbortError') return; }
+      }
+      try {
+        await navigator.clipboard.writeText(link);
+        showToast('📋 הקישור הועתק — הדבק אותו בהודעה לחבר', 'success');
+      } catch (e) {
+        window.prompt('העתק את הקישור ושלח לחבר:', link);
+      }
+    }
+
+    // ---- locking: nobody new gets in, also with the code (people who were in the room can come back)
+    function toggleLock() {
+      if (!ws || ws.readyState !== WebSocket.OPEN || serverV < 2) {
+        showToast('אי אפשר לנעול כרגע — אין חיבור לשרת', 'error');
         return;
       }
-      await startRoom(code, false);
+      ws.send(JSON.stringify({ type: 'lock', locked: !roomLocked }));
+    }
+    function updateLockUI() {
+      document.getElementById('lock-row').hidden = serverV < 2;
+      const tog = document.getElementById('lock-tog');
+      tog.classList.toggle('on', roomLocked);
+      tog.setAttribute('aria-checked', String(roomLocked));
+      document.getElementById('lock-text').textContent = roomLocked ? '🔒 החדר נעול' : '🔓 החדר פתוח';
+      document.getElementById('lock-sub').textContent = roomLocked
+        ? 'אף אחד חדש לא נכנס — גם עם הקוד. מי שכבר היה בחדר יכול לחזור'
+        : 'מי שסורק את הקוד או מקבל את הקישור — נכנס';
+      document.getElementById('qr-card').classList.toggle('locked', roomLocked);
+      document.getElementById('room-lock').hidden = !roomLocked;
+    }
+
+    // ---- the scanner: the camera looks for the room's QR code (BarcodeDetector when the phone has it, jsQR otherwise)
+    function setScanState(text, kind) {
+      const el = document.getElementById('scan-state');
+      el.textContent = text;
+      el.className = 'scan-state' + (kind ? ' ' + kind : '');
+    }
+    function scanMessage(htmlText) {
+      const el = document.getElementById('scan-msg');
+      el.innerHTML = htmlText || '';
+      el.hidden = !htmlText;
+    }
+    async function startScanner() {
+      stopScanner();
+      const s = scanner = { stopped: false, stream: null, timer: 0 };
+      const video = document.getElementById('scan-video'), box = document.getElementById('scan-box');
+      box.classList.remove('found', 'off');
+      setScanState('');
+      scanMessage('📷 מפעיל מצלמה...');
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no camera');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: false,
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } } });
+        if (s.stopped) { stream.getTracks().forEach(t => t.stop()); return; }
+        s.stream = stream;
+        video.srcObject = stream;
+        await video.play().catch(() => {});
+      } catch (e) {
+        if (s.stopped) return;
+        box.classList.add('off');
+        scanMessage('<div>🚫 אין גישה למצלמה</div><div>אפשר לאשר מצלמה בהגדרות הטלפון — או להדביק למטה קישור שקיבלת.</div>' +
+          '<button class="k3-pill k3-raise" onclick="startScanner()">↻ נסה שוב</button>');
+        return;
+      }
+      let detect = null;
+      try {
+        if ('BarcodeDetector' in window && (await BarcodeDetector.getSupportedFormats()).includes('qr_code')) {
+          const bd = new BarcodeDetector({ formats: ['qr_code'] });
+          detect = async () => { const r = await bd.detect(video); return r.length ? r[0].rawValue : null; };
+        }
+      } catch (e) { detect = null; }
+      if (!detect) {
+        try { await loadLib('jsqr.min.js'); }
+        catch (e) {
+          if (!s.stopped) scanMessage('<div>אין חיבור לאינטרנט, אז קורא הקודים לא נטען.</div><button class="k3-pill k3-raise" onclick="startScanner()">↻ נסה שוב</button>');
+          return;
+        }
+        const cv = document.createElement('canvas'), cx = cv.getContext('2d', { willReadFrequently: true });
+        detect = async () => {
+          const w = video.videoWidth, h = video.videoHeight;
+          if (!w || !h) return null;
+          const k = Math.min(1, 720 / Math.max(w, h));
+          cv.width = Math.round(w * k);
+          cv.height = Math.round(h * k);
+          cx.drawImage(video, 0, 0, cv.width, cv.height);
+          const img = cx.getImageData(0, 0, cv.width, cv.height);
+          const r = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+          return r ? r.data : null;
+        };
+      }
+      if (s.stopped) return;
+      scanMessage('');
+      setScanState('מחפש קוד...');
+      const tick = async () => {
+        if (s.stopped) return;
+        let text = null;
+        try { text = await detect(); } catch (e) { text = null; }
+        if (s.stopped) return;
+        if (text) {
+          const id = roomFromText(text);
+          if (id) { foundRoom(id); return; }
+          setScanState('זה לא קוד של שיחה שקטה', 'bad');
+        }
+        s.timer = setTimeout(tick, 120);
+      };
+      tick();
+    }
+    function stopScanner() {
+      if (!scanner) return;
+      scanner.stopped = true;
+      clearTimeout(scanner.timer);
+      if (scanner.stream) scanner.stream.getTracks().forEach(t => t.stop());
+      scanner = null;
+      const video = document.getElementById('scan-video');
+      video.pause();
+      video.srcObject = null;
+    }
+    function foundRoom(id) {
+      document.getElementById('scan-box').classList.add('found');
+      setScanState('✓ נמצא! מצטרף...', 'ok');
+      if (navigator.vibrate) navigator.vibrate(60);
+      stopScanner();
+      startRoom(id, false);
+    }
+    function joinFromInput() {
+      const id = roomFromText(document.getElementById('join-link-input').value);
+      if (!id) { showToast('זה לא קישור של שיחה שקטה — בקש מהחבר לשלוח שוב', 'error'); return; }
+      stopScanner();
+      startRoom(id, false);
+    }
+    function acceptInvite() {
+      const id = pendingInvite;
+      pendingInvite = null;
+      if (id) startRoom(id, false); else showHome();
+    }
+    /** opened from an invite link (…/silent-chat/#join=<key>): ask before joining - the microphone needs a tap */
+    function inviteFromLink() {
+      const id = roomFromText(location.hash);
+      if (!id) return;
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {}   // a reload doesn't join again
+      if (roomCode) { showToast('כבר נמצאים בחדר — צא ממנו כדי להצטרף לחדר אחר', 'error'); return; }
+      pendingInvite = id;
+      showScreen('screen-invited');
     }
 
     async function startRoom(code, isCreator) {
@@ -2836,26 +3694,24 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         await setupAudioPipeline();
         setupPTT();
 
-        // טעינת fingerprint שמור
-        try {
-          const saved = localStorage.getItem('voice_fingerprint');
-          if (saved) {
-            voiceFingerprint = JSON.parse(saved);
-            document.getElementById('enroll-status').textContent =
-              '✓ הקול שלך רשום';
-            document.getElementById('voice-enrolled-badge').style.display = 'flex';
-          }
-        } catch (e) {}
+        // the saved voice prints (⚡ 📊 🧠)
+        loadVoicePrints();
         noiseFloor = null;
         markMode(filterMode);
         setTuneName(filterMode, null);
         renderTune();
 
         roomCode = code;
+        myId = null;
+        serverV = 1;
+        roomLocked = false;
         showRoom();
+        updateLockUI();
         nativeConversation('start'); // Android app: keep the microphone on when the screen turns off
         setStatus('מתחבר לשרת...');
         connectSignaling(isCreator);
+        if (isCreator) openInvite();   // the code for the friends, right away
+        aiPrepare();
       } catch (err) {
         console.error(err);
         showHome();
@@ -2869,7 +3725,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       ws = new WebSocket(SIGNALING_SERVER);
       ws.onopen = () => {
         setStatus('מחובר');
-        ws.send(JSON.stringify({ type: isCreator ? 'create' : 'join', room: roomCode }));
+        ws.send(JSON.stringify({ type: isCreator ? 'create' : 'join', room: roomCode, key: memberKeyFor(roomCode) }));
       };
       ws.onmessage = async (event) => {
         const msg = JSON.parse(event.data);
@@ -2881,8 +3737,15 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
 
     async function handleSignalingMessage(msg) {
       switch (msg.type) {
+        case 'hello':   // a server that knows locking (version 2)
+          serverV = msg.v || 1;
+          updateLockUI();
+          break;
         case 'joined':
           myId = msg.yourId;
+          if (msg.key) saveMemberKey(roomCode, msg.key);
+          roomLocked = !!msg.locked;
+          updateLockUI();
           updateMyParticipant();
           for (const peerId of msg.peers) {
             await createPeerConnection(peerId, true);
@@ -2893,7 +3756,17 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         case 'answer': await handleAnswer(msg.from, msg.answer); break;
         case 'ice-candidate': await handleIceCandidate(msg.from, msg.candidate); break;
         case 'peer-left': removePeer(msg.peerId); break;
-        case 'error': showToast(msg.message, 'error'); break;
+        case 'lock':
+          if (!!msg.locked !== roomLocked) {
+            showToast(msg.locked ? '🔒 החדר ננעל — אף אחד חדש לא ייכנס' : '🔓 החדר נפתח — אפשר להצטרף עם הקוד', 'success');
+          }
+          roomLocked = !!msg.locked;
+          updateLockUI();
+          break;
+        case 'error':
+          showToast(msg.message, 'error');
+          if (!myId && roomCode) leaveRoom();   // could not get in (the room closed, locked or full, an old app): back to the start
+          break;
       }
     }
 
@@ -3055,6 +3928,12 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       document.getElementById('ptt-row').classList.remove('visible');
       document.getElementById('mute-btn').classList.remove('active', 'on');
       voiceBeat(false, 0);
+      aiStop();   // frees the AI's memory (next time it loads from the phone in ~1 s)
+      captureSource = null;
+      closeInvite();
+      roomCode = null;
+      myId = null;
+      roomLocked = false;
       showHome();
     }
 
@@ -3123,6 +4002,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // 3D keys: 3D + "מתהפכים" by default, everything else off (settings: ⚙️ on the home screen)
     if (window.K3) K3.init({ storageKey: 'silentchat.k3' });
     renderTune();
+    inviteFromLink();
+    window.addEventListener('hashchange', inviteFromLink);
 
     if ('serviceWorker' in navigator && !isNativeApp) {
       window.addEventListener('load', () => {

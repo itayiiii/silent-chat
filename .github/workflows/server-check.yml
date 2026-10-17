@@ -1,0 +1,69 @@
+# After a change to the signaling server: waits until Render runs the new version, then checks the live server
+# (version 2, a 6-digit code is refused, a made-up key finds no room). The result is a note on the run.
+# Free: GitHub Actions costs nothing for public repositories; the check wakes the free Render server for a few minutes.
+name: Server check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - server.js
+      - package.json
+      - .github/workflows/server-check.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Wait for the new server, then check it
+        run: |
+          npm install --no-save --silent ws@8
+          cat > check.js <<'JS'
+          const WebSocket = require('ws');
+          const SERVER = 'wss://silent-chat-server.onrender.com';
+          const WANT = 2;
+          // one connection: collect what the server says (and its answer to `send`)
+          const ask = (send) => new Promise((resolve) => {
+            const got = [];
+            let ws;
+            const done = (r) => { try { ws.close(); } catch (e) {} resolve(r); };
+            const timer = setTimeout(() => done({ timeout: true, got }), 90000);   // a sleeping free server needs ~1 min
+            ws = new WebSocket(SERVER);
+            ws.on('open', () => { if (send) setTimeout(() => ws.send(JSON.stringify(send)), 300); });
+            ws.on('message', (d) => {
+              got.push(JSON.parse(d.toString()));
+              if (!send || got.some((m) => m.type !== 'hello')) { clearTimeout(timer); done({ got }); }
+            });
+            ws.on('error', (e) => { clearTimeout(timer); done({ error: e.message, got }); });
+          });
+          const code = (r) => ((r.got || []).find((m) => m.type === 'error') || {}).code;
+          (async () => {
+            const t0 = Date.now();
+            while (Date.now() - t0 < 20 * 60 * 1000) {
+              const r = await ask(null);
+              const hello = (r.got || []).find((m) => m.type === 'hello');
+              if (hello && hello.v >= WANT) {
+                const old = await ask({ type: 'join', room: '123456' });
+                const guess = await ask({ type: 'join', room: 'abcdefghijkmnpqr' });
+                const ok = code(old) === 'old-app' && code(guess) === 'not-found';
+                const sec = Math.round((Date.now() - t0) / 1000);
+                console.log(`::${ok ? 'notice' : 'error'} title=Server v${hello.v} is live::after ${sec} s - a 6-digit code: ${code(old)}, a made-up key: ${code(guess)}`);
+                process.exit(ok ? 0 : 1);
+              }
+              console.log('not the new server yet:', JSON.stringify(r).slice(0, 200));
+              await new Promise((s) => setTimeout(s, 30000));
+            }
+            console.log('::error title=Server not updated::still the old server after 20 minutes - Render may not deploy by itself (Render, the service, Manual Deploy)');
+            process.exit(1);
+          })();
+          JS
+          node check.js

@@ -1,5 +1,5 @@
 # After a change to the signaling server: waits until Render runs the new version, then checks the live server
-# (version 2, a 6-digit code is refused, a made-up key finds no room). The result is a note on the run.
+# (version 3, a 6-digit code is refused, a made-up key or 4-digit number finds no room). The result is a note on the run.
 # Free: GitHub Actions costs nothing for public repositories; the check wakes the free Render server for a few minutes.
 name: Server check
 
@@ -30,7 +30,7 @@ jobs:
           cat > check.js <<'JS'
           const WebSocket = require('ws');
           const SERVER = 'wss://silent-chat-server.onrender.com';
-          const WANT = 2;
+          const WANT = 3;
           // one connection: collect what the server says (and its answer to `send`)
           const ask = (send) => new Promise((resolve) => {
             const got = [];
@@ -54,9 +54,10 @@ jobs:
               if (hello && hello.v >= WANT) {
                 const old = await ask({ type: 'join', room: '123456' });
                 const guess = await ask({ type: 'join', room: 'abcdefghijkmnpqr' });
-                const ok = code(old) === 'old-app' && code(guess) === 'not-found';
+                const number = await ask({ type: 'knock', code: '0000' });
+                const ok = code(old) === 'old-app' && code(guess) === 'not-found' && code(number) === 'not-found';
                 const sec = Math.round((Date.now() - t0) / 1000);
-                console.log(`::${ok ? 'notice' : 'error'} title=Server v${hello.v} is live::after ${sec} s - a 6-digit code: ${code(old)}, a made-up key: ${code(guess)}`);
+                console.log(`::${ok ? 'notice' : 'error'} title=Server v${hello.v} is live::after ${sec} s - a 6-digit code: ${code(old)}, a made-up key: ${code(guess)}, a number with no room: ${code(number)}`);
                 process.exit(ok ? 0 : 1);
               }
               console.log('not the new server yet:', JSON.stringify(r).slice(0, 200));

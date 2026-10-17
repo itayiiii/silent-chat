@@ -995,10 +995,11 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     .qr-card .qr-wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 20px;
       color: #475569; font-size: 14px; }
     .qr-card .qr-wait[hidden] { display: none; }
-    .qr-card .qr-locked { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
-      gap: 6px; border-radius: 20px; background: rgba(255, 255, 255, .94); color: #0f172a; font-size: 15px; font-weight: 700; }
-    .qr-card .qr-locked span { font-size: 40px; }
-    .qr-card.locked .qr-locked { display: flex; }
+    .qr-card .qr-locked { position: absolute; left: 50%; bottom: -15px; transform: translateX(-50%); display: none; white-space: nowrap;
+      padding: 5px 13px; border-radius: 999px; background: #0f172a; border: 1px solid rgba(255, 255, 255, .25); color: #fff;
+      font-size: 13px; font-weight: 700; box-shadow: 0 6px 16px -6px rgba(0, 0, 0, .7); }
+    .qr-card.locked .qr-locked { display: block; }
+    .qr-card.locked + .invite-note { margin-top: 24px; }
     .invite-note { margin: 14px 0 12px; font-size: 13.5px; line-height: 1.55; color: var(--text-dim); text-wrap: balance; }
     .invite-note b { color: var(--text); }
     .invite .wa-key { height: 52px; padding: 0 16px; font-size: 16px; font-weight: 700; color: #fff; background: #25d366;
@@ -1010,6 +1011,36 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     .invite-safe { margin: 10px 0 14px; padding: 8px 10px; border-radius: 10px; font-size: 12px; line-height: 1.5; color: var(--text-dim);
       background: rgba(16, 185, 129, .08); border: 1px solid rgba(16, 185, 129, .28); text-wrap: balance; }
     .invite .close-key { width: 100%; height: 50px; padding: 0; }
+
+    /* ---- a 4-digit number: it knocks on the door, someone inside lets you in ("כן, זה אני"), then: lock? */
+    .code-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin: -2px 0 14px; }
+    .code-row[hidden] { display: none; }
+    .code-label { font-size: 13.5px; color: var(--text-dim); }
+    .room-num { font-size: 26px; font-weight: 800; letter-spacing: .18em; color: var(--accent); background: rgba(244, 162, 97, .1);
+      border: 1px solid rgba(244, 162, 97, .35); border-radius: 12px; padding: 3px 8px 3px 13px; font-variant-numeric: tabular-nums; }
+    .num-line { display: flex; gap: 8px; }
+    .num-input { flex: 1; min-width: 0; height: 52px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--bg-card); color: var(--text); font-family: inherit; font-size: 24px; font-weight: 700; letter-spacing: .3em;
+      text-align: center; outline: none; direction: ltr; }
+    .num-input::placeholder { color: rgba(148, 163, 184, .4); }
+    .num-input:focus { border-color: var(--accent); }
+    .paste-box .paste-key.knock-key { height: 52px; }
+    .knock-bell { display: inline-block; transform-origin: 50% 12%; animation: knockBell 1.6s ease-in-out infinite; }
+    @keyframes knockBell { 0%, 55%, 100% { transform: rotate(0); } 10% { transform: rotate(16deg); } 20% { transform: rotate(-13deg); }
+      30% { transform: rotate(9deg); } 40% { transform: rotate(-5deg); } }
+    html.still .knock-bell { animation: none; }
+    @media (prefers-reduced-motion: reduce) { .knock-bell { animation: none; } }
+    .knock-sign { display: flex; flex-direction: column; align-items: center; gap: 4px; margin: 14px auto 4px; padding: 12px 22px;
+      border-radius: 18px; background: var(--bg-card); border: 1px solid var(--border); }
+    .knock-sign span, .knock-sign small { font-size: 13px; color: var(--text-dim); line-height: 1.5; }
+    .knock-sign b { font-size: 46px; line-height: 1.15; letter-spacing: .12em; }
+    .modal.knock, .modal.lockask { text-align: center; }
+    .knock-head { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; }
+    .knock-head h3 { margin: 0; }
+    .knock-how { font-size: 14px; line-height: 1.55; color: var(--text-dim); margin: 6px 0; text-wrap: balance; }
+    .knock-how b { color: var(--text); }
+    .knock-btns { display: flex; gap: 10px; margin-top: 16px; }
+    .knock-btns .btn { flex: 1; height: 54px; padding: 0; font-size: 16.5px; font-weight: 700; }
 
     /* opened from an invite link */
     .invited-screen { justify-content: center; align-items: center; text-align: center; gap: 6px; }
@@ -1059,12 +1090,25 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     </div>
     <div class="scan-state" id="scan-state"></div>
     <div class="paste-box">
-      <div class="paste-label">קיבלת קישור בהודעה? אפשר להדביק אותו כאן <button class="help-btn sm" onclick="showHelp('paste')" aria-label="הסבר">?</button></div>
+      <div class="paste-label">🔢 יש לך את המספר של החדר? <button class="help-btn sm" onclick="showHelp('num-join')" aria-label="הסבר">?</button></div>
+      <div class="num-line">
+        <input type="text" id="join-num-input" class="num-input" placeholder="0000" maxlength="4" inputmode="numeric" pattern="[0-9]*" autocomplete="off" enterkeyhint="go" />
+        <button class="btn btn-primary k3-raise paste-key knock-key" onclick="knockFromInput()">🔔 בקש להיכנס</button>
+      </div>
+      <div class="paste-label">🔗 קיבלת קישור בהודעה? אפשר להדביק אותו כאן <button class="help-btn sm" onclick="showHelp('paste')" aria-label="הסבר">?</button></div>
       <div class="paste-line">
         <input type="text" id="join-link-input" class="link-input" placeholder="הדבק כאן את הקישור" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" />
         <button class="btn btn-primary k3-raise paste-key" onclick="joinFromInput()">הצטרף</button>
       </div>
     </div>
+  </div>
+
+  <div id="screen-knock" class="screen invited-screen hidden">
+    <div class="logo"><span class="knock-bell">🔔</span></div>
+    <h2 class="title title-row" style="font-size: 26px;">דפקת בדלת <button class="help-btn" onclick="showHelp('knock-wait')" aria-label="הסבר">?</button></h2>
+    <p class="subtitle" id="knock-wait-text">מחכה שמישהו בחדר יכניס אותך...</p>
+    <div class="knock-sign"><span>הסימן שלך</span><b id="knock-sign">…</b><small>תגיד לחברים: "כן, זה אני"<br />ותראה להם את הסימן</small></div>
+    <button class="btn btn-secondary k3-raise join-key" onclick="cancelKnock()">ביטול</button>
   </div>
 
   <div id="screen-invited" class="screen invited-screen hidden">
@@ -1328,9 +1372,14 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       <div class="invite-head"><h3>📷 הזמנת חברים</h3><button class="help-btn sm" onclick="showHelp('invite')" aria-label="הסבר">?</button></div>
       <div class="qr-card" id="qr-card">
         <div class="qr-wait">מכין קוד...</div>
-        <div class="qr-locked"><span>🔒</span>החדר נעול</div>
+        <div class="qr-locked">🔒 נעול: מי שסורק — דופק בדלת</div>
       </div>
       <p class="invite-note">החברים לוחצים <b>"הצטרף לחדר"</b> ומכוונים את המצלמה לקוד.<br />אפשר גם עם המצלמה הרגילה של הטלפון.</p>
+      <div class="code-row" id="code-row" hidden>
+        <span class="code-label">🔢 או מקלידים את המספר</span>
+        <b class="room-num" id="room-num" dir="ltr"></b>
+        <button class="help-btn sm" onclick="showHelp('room-num')" aria-label="הסבר">?</button>
+      </div>
       <div class="with-help">
         <button class="btn k3-raise wa-key" onclick="shareWhatsApp()">💬 שלח הזמנה בוואטסאפ</button>
         <button class="help-btn" onclick="showHelp('whatsapp')" aria-label="הסבר">?</button>
@@ -1346,6 +1395,32 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       </div>
       <div class="invite-safe">🛡️ בתוך הקוד יש מפתח סודי ואקראי של 16 תווים — אי אפשר לנחש אותו או "להריץ מספרים"</div>
       <button class="btn btn-primary k3-raise close-key" onclick="closeInvite()">סגור</button>
+    </div>
+  </div>
+
+  <!-- מישהו דופק בדלת (מספר, או קוד/קישור כשהחדר נעול) - מי שבחדר מכניס או לא -->
+  <div id="knock-modal" class="modal-backdrop">
+    <div class="modal knock">
+      <div class="knock-head"><h3>🔔 מישהו דופק בדלת</h3><button class="help-btn sm" onclick="showHelp('knock')" aria-label="הסבר">?</button></div>
+      <p class="knock-how" id="knock-via"></p>
+      <div class="knock-sign"><span>הסימן שלו</span><b id="knock-their-sign"></b></div>
+      <p class="knock-how">זה החבר שלכם? הכניסו רק אם הוא אומר <b>"כן, זה אני"</b> ומראה את אותו סימן.</p>
+      <div class="knock-btns">
+        <button class="btn btn-primary k3-raise" onclick="answerKnock(true)">✓ הכנס</button>
+        <button class="btn btn-secondary k3-raise" onclick="answerKnock(false)">✗ לא</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- נכנסת עם מספר: לנעול את החדר? -->
+  <div id="lockask-modal" class="modal-backdrop" onclick="closeLockAsk()">
+    <div class="modal lockask" onclick="event.stopPropagation()">
+      <div class="knock-head"><h3>🎉 נכנסת לחדר!</h3><button class="help-btn sm" onclick="showHelp('lockask')" aria-label="הסבר">?</button></div>
+      <p class="knock-how">לנעול את החדר? כשהוא נעול, כל מי שמגיע — גם עם הקוד, הקישור או המספר — דופק בדלת, ומישהו מכם צריך להכניס אותו.</p>
+      <div class="knock-btns">
+        <button class="btn btn-primary k3-raise" onclick="lockFromAsk()">🔒 נעל את החדר</button>
+        <button class="btn btn-secondary k3-raise" onclick="closeLockAsk()">לא עכשיו</button>
+      </div>
     </div>
   </div>
 
@@ -2415,7 +2490,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // =========================================================================
     // ניהול מסכים
     // =========================================================================
-    const SCREENS = ['screen-home', 'screen-join', 'screen-invited', 'screen-room'];
+    const SCREENS = ['screen-home', 'screen-join', 'screen-invited', 'screen-knock', 'screen-room'];
     function showScreen(id) {
       SCREENS.forEach(s => document.getElementById(s).classList.toggle('hidden', s !== id));
       if (id !== 'screen-join') stopScanner();
@@ -2424,16 +2499,19 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     function showJoin() {
       showScreen('screen-join');
       document.getElementById('join-link-input').value = '';
+      document.getElementById('join-num-input').value = '';
       startScanner();
     }
     function showCreate() { startRoom(newRoomId(), true); }
     function showRoom() { showScreen('screen-room'); }
 
+    let toastTimer = 0;
     function showToast(message, type = 'info') {
       const toast = document.getElementById('toast');
       toast.textContent = message;
       toast.className = 'toast show' + (type === 'error' ? ' error' : type === 'success' ? ' success' : '');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+      clearTimeout(toastTimer);   // a new message gets its own 3 seconds (an older timer must not hide it)
+      toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
     }
     function escapeText(s) {
       return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -2983,14 +3061,14 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       const needsBrowserFilter = (mode === 'basic' || mode === 'smart');
       const hadBrowserFilter = (oldMode === 'basic' || oldMode === 'smart');
 
-      if (needsBrowserFilter !== hadBrowserFilter) {
-        await reloadMicrophone(needsBrowserFilter);
-      }
-
-      if (mode === 'voice') aiPrepare();
       // voice mode without a registration: the card shows "רשום את הקול שלי" (the registration hears the same microphone)
       if (mode === 'voice' && !voiceFingerprint) showToast('לחץ "רשום את הקול שלי" כדי להפעיל', 'info');
       else showToast('מצב: ' + getModeName(mode));
+
+      if (needsBrowserFilter !== hadBrowserFilter) {
+        await reloadMicrophone(needsBrowserFilter);
+      }
+      if (mode === 'voice') aiPrepare();
     }
 
     function markMode(mode) {
@@ -3147,9 +3225,26 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         'שולחים את הקישור לחדר בכל אפליקציה אחרת: SMS, מייל, טלגרם... החבר לוחץ על הקישור ומצטרף.',
         'מי שיש לו את הקישור יכול להיכנס — שלח רק לחברים. כשכולם בפנים, אפשר לנעול את החדר.'] },
       'lock': { title: 'נעילת החדר', body: [
-        'נעול: אף אחד חדש לא נכנס — גם אם יש לו את הקוד או את הקישור.',
-        'מי שכבר היה בחדר ונפל (למשל עבר מ-Wi-Fi לסלולר) יכול לחזור גם כשנעול.',
-        'כל מי שבחדר יכול לנעול ולפתוח.'] },
+        'נעול: כל מי שמגיע — עם הקוד, הקישור או המספר — דופק בדלת, ומישהו מכם צריך ללחוץ "הכנס".',
+        'פתוח: עם הקוד או הקישור נכנסים ישר (את המפתח הסודי שבהם אי אפשר לנחש). עם המספר תמיד דופקים בדלת.',
+        'מי שכבר היה בחדר ונפל (למשל עבר מ-Wi-Fi לסלולר) חוזר לבד, גם כשנעול. כל מי שבחדר יכול לנעול ולפתוח.'] },
+      'room-num': { title: 'המספר של החדר', body: [
+        'לחבר בלי מצלמה (או כשהקוד לא נסרק): הוא לוחץ "הצטרף לחדר" ומקליד את 4 הספרות.',
+        'מספר קצר אפשר לנחש, ולכן מי שמקליד מספר לא נכנס ישר: הוא דופק בדלת, ובטלפונים שלכם קופץ "מישהו דופק בדלת" עם סימן — מכניסים רק אם הוא אומר "כן, זה אני".',
+        'אחרי שהוא נכנס, הוא מתבקש לנעול את החדר.'] },
+      'num-join': { title: 'כניסה עם מספר', body: [
+        'מקלידים את 4 הספרות שמופיעות אצל החבר מתחת לקוד, ולוחצים "בקש להיכנס".',
+        'אצלך יופיע סימן (שני ציורים), ואצל החברים בחדר — "מישהו דופק בדלת" עם אותו סימן. תגיד "כן, זה אני" ותראה להם, ומישהו מהם יכניס אותך.'] },
+      'knock-wait': { title: 'דפקת בדלת', body: [
+        'החברים בחדר רואים עכשיו "מישהו דופק בדלת" עם הסימן שלך.',
+        'תגיד להם "כן, זה אני" ותראה את הסימן — ומישהו מהם ילחץ "הכנס". אם אף אחד לא עונה תוך 3 דקות, אפשר לנסות שוב.'] },
+      'knock': { title: 'מישהו דופק בדלת', body: [
+        'מישהו הקליד את המספר של החדר (או שהחדר נעול והוא סרק את הקוד). על המסך שלו מופיע אותו סימן.',
+        'אם החבר אומר "כן, זה אני" ומראה את אותו סימן — לחצו "הכנס". אם אתם לא מכירים — "לא".',
+        'מספיק שאחד מכם יענה.'] },
+      'lockask': { title: 'לנעול את החדר?', body: [
+        'נכנסת עם המספר — אז כדאי לנעול: ככה גם מי שינחש את המספר, או ימצא את הקישור, לא ייכנס בלי שתכניסו אותו.',
+        'אם עוד חברים מגיעים, הם פשוט ידפקו בדלת ומישהו יכניס אותם.'] },
       'install': { title: 'התקן כאפליקציה', body: [
         'מוסיף את שיחה שקטה למסך הבית, כמו אפליקציה רגילה.',
         'היא תיפתח במסך מלא, בלי שורת הכתובת של הדפדפן.'] },
@@ -3566,10 +3661,13 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       tog.classList.toggle('on', roomLocked);
       tog.setAttribute('aria-checked', String(roomLocked));
       document.getElementById('lock-text').textContent = roomLocked ? '🔒 החדר נעול' : '🔓 החדר פתוח';
-      document.getElementById('lock-sub').textContent = roomLocked
-        ? 'אף אחד חדש לא נכנס — גם עם הקוד. מי שכבר היה בחדר יכול לחזור'
-        : 'מי שסורק את הקוד או מקבל את הקישור — נכנס';
+      document.getElementById('lock-sub').textContent = serverV >= 3
+        ? (roomLocked ? 'כל מי שמגיע דופק בדלת, ומישהו מכם מכניס אותו. מי שכבר היה בחדר חוזר לבד'
+          : 'עם הקוד או הקישור נכנסים ישר; עם המספר — דופקים בדלת')
+        : (roomLocked ? 'אף אחד חדש לא נכנס — גם עם הקוד. מי שכבר היה בחדר יכול לחזור'
+          : 'מי שסורק את הקוד או מקבל את הקישור — נכנס');
       document.getElementById('qr-card').classList.toggle('locked', roomLocked);
+      document.querySelector('#qr-card .qr-locked').textContent = serverV >= 3 ? '🔒 נעול: מי שסורק — דופק בדלת' : '🔒 החדר נעול';
       document.getElementById('room-lock').hidden = !roomLocked;
     }
 
@@ -3666,6 +3764,79 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       stopScanner();
       startRoom(id, false);
     }
+    // ---- a 4-digit number (server version 3): it knocks; someone inside lets you in, then you are asked to lock
+    let roomNum = null;        // this room's number (the server gives it)
+    let knockNumber = null;    // the number you typed (until you are in)
+    let knockNow = null;       // the knock on your screen (you are inside): { id, sign, via }
+    let knockQueue = [];
+    function showRoomNum() {
+      const row = document.getElementById('code-row');
+      row.hidden = !roomNum;
+      if (roomNum) document.getElementById('room-num').textContent = roomNum;
+    }
+    function knockFromInput() {
+      const n = document.getElementById('join-num-input').value.replace(/[^0-9]/g, '');
+      if (n.length !== 4) { showToast('המספר של החדר הוא 4 ספרות', 'error'); return; }
+      stopScanner();
+      startRoom(null, 'knock', n);
+    }
+    function showKnocking(sign) {
+      document.getElementById('knock-sign').textContent = sign || '…';
+      showScreen('screen-knock');
+    }
+    function onKnock(msg) {   // someone knocks (you are inside)
+      if (knockQueue.some(k => k.id === msg.id) || (knockNow && knockNow.id === msg.id)) return;
+      knockQueue.push(msg);
+      if (!knockNow) nextKnock();
+    }
+    function nextKnock() {
+      knockNow = knockQueue.shift() || null;
+      const modal = document.getElementById('knock-modal');
+      if (!knockNow) { modal.classList.remove('visible'); return; }
+      document.getElementById('knock-their-sign').textContent = knockNow.sign;
+      document.getElementById('knock-via').textContent = knockNow.via === 'number'
+        ? 'הוא הקליד את המספר של החדר.' : 'יש לו את הקוד או הקישור — והחדר נעול.';
+      modal.classList.add('visible');
+      chime();
+      if (navigator.vibrate) navigator.vibrate([90, 60, 90]);
+    }
+    function answerKnock(ok) {
+      if (!knockNow) return;
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'let-in', id: knockNow.id, ok: ok }));
+      knockNow = null;
+      nextKnock();
+    }
+    function onKnockDone(msg) {   // answered (here or on another phone), or the knocker gave up
+      knockQueue = knockQueue.filter(k => k.id !== msg.id);
+      if (knockNow && knockNow.id === msg.id) { knockNow = null; nextKnock(); }
+      if (msg.ok && msg.by !== myId) showToast('✓ ' + msg.sign + ' נכנס לחדר', 'success');
+    }
+    /** a soft "ding-dong" in your own earphones (the friends don't hear it) */
+    function chime() {
+      try {
+        const ctx = audioContext;
+        if (!ctx) return;
+        [[880, 0], [660, 0.2]].forEach(([f, t]) => {
+          const o = ctx.createOscillator(), g = ctx.createGain(), at = ctx.currentTime + t;
+          o.type = 'sine';
+          o.frequency.value = f;
+          g.gain.setValueAtTime(0.0001, at);
+          g.gain.exponentialRampToValueAtTime(0.22, at + 0.02);
+          g.gain.exponentialRampToValueAtTime(0.0001, at + 0.5);
+          o.connect(g);
+          g.connect(ctx.destination);
+          o.start(at);
+          o.stop(at + 0.55);
+        });
+      } catch (e) { /* no sound - the window is enough */ }
+    }
+    function cancelKnock() { leaveRoom(); }   // "ביטול" while waiting at the door
+    function closeLockAsk() { document.getElementById('lockask-modal').classList.remove('visible'); }
+    function lockFromAsk() {
+      closeLockAsk();
+      if (!roomLocked) toggleLock();
+    }
+
     function joinFromInput() {
       const id = roomFromText(document.getElementById('join-link-input').value);
       if (!id) { showToast('זה לא קישור של שיחה שקטה — בקש מהחבר לשלוח שוב', 'error'); return; }
@@ -3687,7 +3858,9 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       showScreen('screen-invited');
     }
 
-    async function startRoom(code, isCreator) {
+    /** how: true = create, false = join (a key), 'knock' = a 4-digit number */
+    async function startRoom(code, how, number) {
+      const mode = how === true ? 'create' : how === 'knock' ? 'knock' : 'join';
       try {
         setStatus('מבקש גישה למיקרופון...');
         rawStream = await getLocalStream(true);
@@ -3701,16 +3874,21 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         setTuneName(filterMode, null);
         renderTune();
 
-        roomCode = code;
+        roomCode = code;   // a knock by number: the server tells the room once you are let in
         myId = null;
         serverV = 1;
         roomLocked = false;
-        showRoom();
+        roomNum = null;
+        knockNumber = mode === 'knock' ? number : null;
+        knockNow = null;
+        knockQueue = [];
+        if (mode === 'knock') showKnocking(''); else showRoom();
         updateLockUI();
+        showRoomNum();
         nativeConversation('start'); // Android app: keep the microphone on when the screen turns off
         setStatus('מתחבר לשרת...');
-        connectSignaling(isCreator);
-        if (isCreator) openInvite();   // the code for the friends, right away
+        connectSignaling(mode);
+        if (mode === 'create') openInvite();   // the code for the friends, right away
         aiPrepare();
       } catch (err) {
         console.error(err);
@@ -3721,31 +3899,53 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // =========================================================================
     // WebRTC + Signaling
     // =========================================================================
-    function connectSignaling(isCreator) {
-      ws = new WebSocket(SIGNALING_SERVER);
-      ws.onopen = () => {
+    function connectSignaling(mode) {
+      const sock = ws = new WebSocket(SIGNALING_SERVER);
+      sock.onopen = () => {
         setStatus('מחובר');
-        ws.send(JSON.stringify({ type: isCreator ? 'create' : 'join', room: roomCode, key: memberKeyFor(roomCode) }));
+        if (mode === 'knock') sock.send(JSON.stringify({ type: 'knock', code: knockNumber }));
+        else sock.send(JSON.stringify({ type: mode, room: roomCode, key: memberKeyFor(roomCode) }));
       };
-      ws.onmessage = async (event) => {
+      sock.onmessage = async (event) => {
+        if (sock !== ws) return;   // an old connection (you left that room)
         const msg = JSON.parse(event.data);
         await handleSignalingMessage(msg);
       };
-      ws.onerror = () => { showToast('שגיאת חיבור לשרת', 'error'); setStatus('שגיאה'); };
-      ws.onclose = () => setStatus('התנתקתי');
+      sock.onerror = () => { if (sock !== ws) return; showToast('שגיאת חיבור לשרת', 'error'); setStatus('שגיאה'); };
+      sock.onclose = () => {
+        if (sock !== ws) return;
+        setStatus('התנתקתי');
+        // still waiting at the door: without the server nobody can let you in
+        if (!myId && !document.getElementById('screen-knock').classList.contains('hidden')) {
+          showToast('החיבור לשרת נקטע — נסו שוב', 'error');
+          leaveRoom();
+        }
+      };
     }
 
     async function handleSignalingMessage(msg) {
       switch (msg.type) {
-        case 'hello':   // a server that knows locking (version 2)
+        case 'hello':   // version 2: locking; version 3: the 4-digit number + knocking
           serverV = msg.v || 1;
           updateLockUI();
+          if (knockNumber && serverV < 3) { showToast('השרת עוד לא מכיר מספרים — סרקו את הקוד', 'error'); leaveRoom(); }
           break;
+        case 'knocking':   // you knocked (a number, or the room is locked): wait for someone inside
+          showKnocking(msg.sign);
+          break;
+        case 'knock': onKnock(msg); break;
+        case 'knock-done': onKnockDone(msg); break;
         case 'joined':
           myId = msg.yourId;
+          if (!roomCode) roomCode = msg.room;   // let in by number: now you have the room's key too
+          knockNumber = null;
           if (msg.key) saveMemberKey(roomCode, msg.key);
           roomLocked = !!msg.locked;
+          roomNum = msg.code || null;
+          if (document.getElementById('screen-room').classList.contains('hidden')) showRoom();
           updateLockUI();
+          showRoomNum();
+          if (msg.knocked && !msg.locked) setTimeout(() => document.getElementById('lockask-modal').classList.add('visible'), 600);
           updateMyParticipant();
           for (const peerId of msg.peers) {
             await createPeerConnection(peerId, true);
@@ -3758,14 +3958,16 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         case 'peer-left': removePeer(msg.peerId); break;
         case 'lock':
           if (!!msg.locked !== roomLocked) {
-            showToast(msg.locked ? '🔒 החדר ננעל — אף אחד חדש לא ייכנס' : '🔓 החדר נפתח — אפשר להצטרף עם הקוד', 'success');
+            showToast(msg.locked ? (serverV >= 3 ? '🔒 החדר ננעל — מי שמגיע דופק בדלת' : '🔒 החדר ננעל — אף אחד חדש לא ייכנס')
+              : '🔓 החדר נפתח — אפשר להצטרף עם הקוד', 'success');
           }
+          if (msg.locked) closeLockAsk();
           roomLocked = !!msg.locked;
           updateLockUI();
           break;
         case 'error':
           showToast(msg.message, 'error');
-          if (!myId && roomCode) leaveRoom();   // could not get in (the room closed, locked or full, an old app): back to the start
+          if (!myId && (roomCode || knockNumber)) leaveRoom();   // could not get in (no such room, not let in, full, an old app): back to the start
           break;
       }
     }
@@ -3931,9 +4133,15 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       aiStop();   // frees the AI's memory (next time it loads from the phone in ~1 s)
       captureSource = null;
       closeInvite();
+      closeLockAsk();
+      document.getElementById('knock-modal').classList.remove('visible');
       roomCode = null;
       myId = null;
       roomLocked = false;
+      roomNum = null;
+      knockNumber = null;
+      knockNow = null;
+      knockQueue = [];
       showHome();
     }
 

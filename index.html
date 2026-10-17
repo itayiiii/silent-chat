@@ -1241,12 +1241,12 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         <details class="tune-adv" id="tune-adv">
           <summary>מתקדם</summary>
           <div class="tune-row" id="row-ns">
-            <span class="tune-label">סינון רעש של הטלפון<small>במצבים בסיסי וחכם</small></span>
+            <span class="tune-label">סינון רעש של הטלפון<small>בבסיסי, חכם וזיהוי קולי</small></span>
             <button type="button" class="k3-tog k3-groove" data-tog="ns" role="switch" aria-checked="true" aria-label="סינון רעש של הטלפון"></button>
             <button class="help-btn sm" onclick="showHelp('ns')" aria-label="הסבר">?</button>
           </div>
           <div class="tune-row" id="row-agc">
-            <span class="tune-label">הגברה אוטומטית<small>במצבים בסיסי וחכם</small></span>
+            <span class="tune-label">הגברה אוטומטית<small>בבסיסי, חכם וזיהוי קולי</small></span>
             <button type="button" class="k3-tog k3-groove" data-tog="agc" role="switch" aria-checked="true" aria-label="הגברה אוטומטית"></button>
             <button class="help-btn sm" onclick="showHelp('agc')" aria-label="הסבר">?</button>
           </div>
@@ -2090,6 +2090,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
 
     let isEnrolling = false;
     let enrollmentSamples = [];
+    let enrollFrames = [];
     let enrollmentAnalyzer = null;
     let enrollmentStream = null;
     let enrollmentCtx = null;
@@ -2206,10 +2207,10 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     const ENGINE_ICON = { fp: '⚡', mfcc: '📊', ai: '🧠', mix: '🛡️' };
     const ENGINE_NAME = { fp: '⚡ טביעת קול', mfcc: '📊 מודל קול', ai: '🧠 בינה מלאכותית', mix: '🛡️ שילוב' };
     const ENGINE_NOTES = {
-      fp: '⚡ משווה את גובה הצליל ואת "צבע" הקול לטביעה שרשמת. מיידי וקל — אבל בבדיקה שלי הוא העביר גם 88% מהדיבור של דובר אחר.',
-      mfcc: '📊 מודל סטטיסטי של הקול שלך (MFCC — השיטה הקלאסית לזיהוי דוברים). מחליט תוך חמישית שנייה. בבדיקות שלי (הקלטות נקיות): עברו 82%–86% מהדיבור של הדובר הרשום, ו-0%–4% של דובר אחר.',
-      ai: '🧠 רשת נוירונים (CAM++) שמכירה אלפי קולות, ובודקת כל משפט אם זה אתה. בבדיקות שלי (הקלטות נקיות): עברו 90%–98% מהדיבור של הדובר הרשום, ו-0% של דובר אחר. חצי השנייה הראשונה של משפט מחכה לתשובה שלה.',
-      mix: '🛡️ מודל הקול פותח מיד — בלי לחתוך את תחילת המשפט — והבינה בודקת אחרי חצי שנייה: אם זה לא אתה, היא סוגרת עד ההפסקה הבאה. בבדיקה שלי: עברו 97% מהדיבור של הדובר הרשום, ו-3% של דובר אחר.'
+      fp: '⚡ משווה את גובה הצליל ואת "צבע" הקול לטביעה שרשמת. מיידי וקל — אבל בבדיקות שלי הוא העביר גם 85%–92% מהדיבור של דובר אחר.',
+      mfcc: '📊 מודל סטטיסטי של הקול שלך (MFCC — השיטה הקלאסית לזיהוי דוברים). מחליט תוך חמישית שנייה. בבדיקות שלי (הקלטות נקיות): עברו 73%–86% מהדיבור של הדובר הרשום, ו-0%–4% של דובר אחר.',
+      ai: '🧠 רשת נוירונים (CAM++) שמכירה אלפי קולות, ובודקת כל משפט אם זה אתה. בבדיקות שלי (הקלטות נקיות): עברו 90%–99% מהדיבור של הדובר הרשום, ו-0% של דובר אחר. חצי השנייה הראשונה של משפט מחכה לתשובה שלה.',
+      mix: '🛡️ מודל הקול פותח מיד — בלי לחתוך את תחילת המשפט — והבינה בודקת אחרי חצי שנייה: אם זה לא אתה, היא סוגרת עד ההפסקה הבאה. בבדיקות שלי: עברו 97%–99% מהדיבור של הדובר הרשום, ו-0%–3% של דובר אחר.'
     };
     let voiceMfcc = null;   // 📊 the model of your voice (from the registration)
     let voiceAi = null;     // 🧠 the AI's print of your voice (512 numbers)
@@ -2725,8 +2726,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
     // 5. Spectral Flux - שינוי ספקטרלי לאורך זמן
     // =========================================================================
 
-    function extractVoiceFeatures(freqData, timeData) {
-      const sampleRate = audioContext.sampleRate;
+    function extractVoiceFeatures(freqData, timeData, rate) {
+      const sampleRate = rate || audioContext.sampleRate;
       const binSize = sampleRate / (2 * freqData.length);
 
       // 1. חישוב pitch בסיסי - autocorrelation
@@ -2845,6 +2846,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
           throw new Error('אין stream פעיל');
         }
         mf.enroll = [];                                              // 📊 the frames for the voice model
+        enrollFrames = [];                                           // every frame: its level + what each engine needs
         if (aiWorker) aiWorker.postMessage({ type: 'enroll-start' });   // 🧠 the worker records too
 
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2877,15 +2879,13 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
           analyzer.getByteFrequencyData(freqData);
           analyzer.getFloatTimeDomainData(timeData);
 
-          // חלץ features רק אם יש קול משמעותי (אחרת שקט יקלקל את הטביעה)
-          const avg = freqData.reduce((a, b) => a + b, 0) / freqData.length;
-          if (avg > 20) {
-            const features = extractVoiceFeatures(freqData, timeData);
-            if (features.pitch > 0) {
-              enrollmentSamples.push(features);
-            }
+          // every frame is kept with how loud the speech band is; at the end only the frames near your loudest
+          // ones are used (so silence doesn't spoil the print) - this works with a quiet microphone too
+          const level = speechLevel(freqData, ctx.sampleRate / analyzer.fftSize);
+          if (level > 1) {
             analyzer.getFloatFrequencyData(dbData);
-            mf.enroll.push(MFCC.frame(dbData, ctx.sampleRate / analyzer.fftSize));
+            enrollFrames.push({ level: level, features: extractVoiceFeatures(freqData, timeData, ctx.sampleRate),
+              mfcc: MFCC.frame(dbData, ctx.sampleRate / analyzer.fftSize) });
           }
 
           // UI - שעון ספירה לאחור
@@ -2923,9 +2923,15 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         enrollmentAnalyzer = null;
       }
 
+      // the frames with speech: near your loudest moments (relative - any microphone level), if there was speech at all
+      const voiced = voicedFrames(enrollFrames);
+      enrollFrames = [];
+      enrollmentSamples = voiced.map(f => f.features).filter(f => f.pitch > 0);
+      mf.enroll = voiced.map(f => f.mfcc);
+
       if (enrollmentSamples.length < 20) {
         if (aiWorker) aiWorker.postMessage({ type: 'enroll-cancel' });
-        showToast('לא נקלט מספיק קול. נסה שוב ודבר חזק יותר', 'error');
+        showToast('לא שמעתי מספיק דיבור. נסה שוב: דבר רגיל, קרוב לטלפון, לאורך כל 5 השניות', 'error');
         document.getElementById('enroll-start-btn').disabled = false;
         document.getElementById('enroll-start-btn').textContent = 'נסה שוב';
         return;
@@ -2987,8 +2993,28 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       }, 1500);
     }
 
+    /** how loud the speech band (100 Hz - 4 kHz) is in one analyser frame, 0..255 */
+    function speechLevel(freqData, binHz) {
+      const lo = Math.max(1, Math.round(100 / binHz)), hi = Math.min(freqData.length - 1, Math.round(4000 / binHz));
+      let sum = 0;
+      for (let i = lo; i <= hi; i++) sum += freqData[i];
+      return sum / (hi - lo + 1);
+    }
+    /** the registration's frames that hold speech: within ~11 dB of the loudest ones - but only if the level
+     *  went up and down like speech does (a steady noise alone is not a voice) */
+    function voicedFrames(frames) {
+      if (frames.length < 20) return [];
+      const lv = frames.map(f => f.level).sort((a, b) => a - b);
+      const at = q => lv[Math.min(lv.length - 1, Math.floor(lv.length * q))];
+      const spoke = at(0.95) - at(0.05) >= 15 || at(0.9) >= 60;   // 15 of 255 ≈ 4 dB
+      if (!spoke) return [];
+      const cut = Math.max(at(0.9) - 40, at(0.05) + 8);          // 40 of 255 ≈ 11 dB below your loudest
+      return frames.filter(f => f.level >= cut);
+    }
+
     function cancelEnrollment() {
       isEnrolling = false;
+      enrollFrames = [];
       mf.enroll = null;
       if (aiWorker) aiWorker.postMessage({ type: 'enroll-cancel' });
       if (enrollmentCtx) {
@@ -3058,8 +3084,9 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       if (mode !== 'ptt') pttActive = false;
 
       // טעינה מחדש של המיקרופון רק אם הסינון של הדפדפן משתנה
-      const needsBrowserFilter = (mode === 'basic' || mode === 'smart');
-      const hadBrowserFilter = (oldMode === 'basic' || oldMode === 'smart');
+      // the phone's noise suppression + automatic gain: בסיסי, חכם and זיהוי קולי (the voice prints don't mind the gain)
+      const needsBrowserFilter = (mode === 'basic' || mode === 'smart' || mode === 'voice');
+      const hadBrowserFilter = (oldMode === 'basic' || oldMode === 'smart' || oldMode === 'voice');
 
       // voice mode without a registration: the card shows "רשום את הקול שלי" (the registration hears the same microphone)
       if (mode === 'voice' && !voiceFingerprint) showToast('לחץ "רשום את הקול שלי" כדי להפעיל', 'info');
@@ -3185,10 +3212,10 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
         'אחרי ההורדה רושמים שוב את הקול (5 שניות), כדי שהבינה תכיר אותך.',
         'הקול שלך לא נשלח לשום מקום — הבדיקה נעשית בתוך הטלפון.'] },
       'ns': { title: 'סינון רעש של הטלפון', body: [
-        'הסינון המובנה של הטלפון מנקה רעש רקע קבוע (מזגן, המולה). פועל במצבים בסיסי וחכם.',
+        'הסינון המובנה של הטלפון מנקה רעש רקע קבוע (מזגן, המולה). פועל במצבים בסיסי, חכם וזיהוי קולי.',
         'כבוי — הקול טבעי יותר, אבל עם יותר רעש.'] },
       'agc': { title: 'הגברה אוטומטית', body: [
-        'הטלפון מגביר לבד קול שקט ומנמיך קול חזק. פועל במצבים בסיסי וחכם.',
+        'הטלפון מגביר לבד קול שקט ומנמיך קול חזק. פועל במצבים בסיסי, חכם וזיהוי קולי.',
         'כשהיא פועלת, בשקט גם הרעש מוגבר. אם הסף "קופץ" — נסה לכבות.'] },
       'band': { title: 'רק תדרי דיבור', body: [
         'מוריד מהקול שנשלח את התדרים שאין בהם דיבור: רעשים נמוכים (מזגן, רחש) וגבוהים (צלצול צלחות וכוסות).',
@@ -3375,8 +3402,8 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       showEl('tune-voice', m === 'voice');
       showEl('tune-gate', gate);
       showEl('row-margin', gate && tune.auto);
-      showEl('row-ns', m === 'basic' || m === 'smart');
-      showEl('row-agc', m === 'basic' || m === 'smart');
+      showEl('row-ns', m === 'basic' || m === 'smart' || m === 'voice');
+      showEl('row-agc', m === 'basic' || m === 'smart' || m === 'voice');
       const note = document.getElementById('tune-note');
       note.textContent = TUNE_NOTES[m] || '';
       showEl('tune-note', !gate);
@@ -3437,7 +3464,7 @@ html.still .k3 > .k3-sp, html.still .k3 .k3-bb, html.still .k3 .k3-fc, html.stil
       if (window.K3) K3.roll(el, el.dataset.v, dir > 0 ? 'up' : 'down'); else writeText(el, el.dataset.v);
       drawTuneMeters();
     }
-    function microphoneFiltersOn() { return filterMode === 'basic' || filterMode === 'smart'; }
+    function microphoneFiltersOn() { return filterMode === 'basic' || filterMode === 'smart' || filterMode === 'voice'; }
     function toggleTune(key) {
       tune[key] = !tune[key];
       saveTune();

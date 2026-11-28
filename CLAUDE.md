@@ -19,3 +19,8 @@
 - `server.js` — the signaling server on Render (free tier; sleeps after 15 min, wakes in ~1 min). Version 3: says `hello`; `join` never creates a room; 4-digit numbers (`codes`) and knocking (`knock` / `let-in` / `knock-done`); failed joins limited per address; up to 8 per room; `lock`. `.github/workflows/server-check.yml` checks the live server after a change (its result is a note on the run).
 - `mobile/` — the Capacitor Android app. `scripts/build-web.mjs` copies `index.html`, `ai-worker.js`, `icons/`, `lib/` into `www/` and obfuscates our JavaScript; `android/` holds the native parts (`CallService` keeps the mic on with the screen off; `SilentCallPlugin.share` opens WhatsApp / the share sheet; CAMERA is for the QR scanner).
 - `.github/workflows/android.yml` — builds the release APK when the app changes and publishes it on the `test-build` release.
+
+## Two builds: APK = Itay's, AAB = Play's
+- **APK = Itay's full build, AAB = Play's build** (Itay 28/11/2026: "כל מה שקשור ל־APK, שם אפשר להשאיר את הדברים שאנחנו לא
+  נשאיר אותם ב־AAB, אלא אם כן אני מנחה אחרת"). Anything held back from the Play build because of Play's rules stays in the
+  APK, behind a store-build switch (store = off, APK = on), unless Itay says otherwise. See AGENTS.md → Rules for both.

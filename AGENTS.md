@@ -23,6 +23,12 @@ Two AI agents work for him. This file is the same in all of Itay's app repositor
 - **Never make a second upload key.** Play knows one upload key per app; a new one needs a reset through Play support. The key's certificate fingerprints (public) are in `signing/play-upload-fingerprints.txt` — compare with Play Console → App integrity → App signing.
 - Itay keeps an offline copy of each upload key file and its password (Google Drive + a USB stick + a password manager).
 - Nothing is uploaded to Play, published or sent to testers without Itay's OK.
+- **Two builds, always: the APK is Itay's, the AAB is Play's** (Itay 28/11/2026). The AAB (the Play build) has only what
+  Play allows. The APK (the test build Itay installs himself) has everything the AAB has **plus everything that was held back
+  from the AAB only because of Play's rules** — e.g. in ride.bpm the satellites, WhatsApp / phone-call links, background
+  location, group rides; whatever was limited for Play. Keep each such thing behind one build switch (store build = off,
+  APK = on) — never delete it from the code. Turn something off in the APK too only when Itay says so (he wants to test it
+  himself). When a feature is limited for Play, say in the commit and to Itay that the APK keeps it.
 
 ## This repository
 - App: silent-chat. **This repository is public** — never commit a key, a keystore or anything secret here; no upload key is in it (as of 21/11/2026).
